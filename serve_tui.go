@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"syscall"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -83,6 +84,8 @@ func (m serveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		cmd.Stderr = cmd.Stdout // merge stderr into stdout
 
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
 		if err := cmd.Start(); err != nil {
 			m.quitting = true
 			m.err = err
@@ -109,7 +112,7 @@ func (m serveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Type == tea.KeyCtrlC {
 			m.quitting = true
 			if m.cmd != nil && m.cmd.Process != nil {
-				_ = m.cmd.Process.Kill()
+				_ = syscall.Kill(-m.cmd.Process.Pid, syscall.SIGKILL)
 			}
 			return m, tea.Quit
 		}
