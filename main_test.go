@@ -14,7 +14,7 @@ func TestRootCmd_HasSubcommands(t *testing.T) {
 	assert.NotNil(t, rootCmd)
 	assert.Equal(t, "gherkinator", rootCmd.Use)
 	assert.Equal(t, "A testing plan management and generation tool", rootCmd.Short)
-	assert.Len(t, rootCmd.Commands(), 6)
+	assert.Len(t, rootCmd.Commands(), 5)
 }
 
 func TestInitCommand_CreatesDirectoryAndFile(t *testing.T) {

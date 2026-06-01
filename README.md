@@ -164,29 +164,6 @@ Output filenames are derived from the `feature` field
 
 ---
 
-### `add`
-
-Interactively append a new test plan to `test-plan.yaml` using a
-terminal UI (Bubbletea).
-
-```
-gherkinator add
-```
-
-The prompt walks through each field in order:
-
-1. Feature title (text input, Enter to advance)
-2. Test type (arrow-key selection, Enter to confirm)
-3. Implementation status (arrow-key selection, Enter to confirm)
-4. Description (text input, Enter to advance)
-5. Background (multiline textarea, Ctrl+D to finish)
-6. Scenarios (multiline textarea, blank line separates scenarios, Ctrl+D to finish)
-7. Examples (CSV format — header row first, Ctrl+D to finish)
-
-Press **Esc** or **Ctrl+C** at any point to cancel.
-
----
-
 ### `serve`
 
 Serve the test plans as a live Sphinx documentation site.

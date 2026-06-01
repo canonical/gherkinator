@@ -10,7 +10,6 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"go.yaml.in/yaml/v3"
 )
 
 var rootCmd = &cobra.Command{
@@ -74,65 +73,7 @@ examples: []
 	generateCmd.Flags().StringVar(&format, "format", "gh", "Output format (gh or md)")
 	generateCmd.Flags().StringVarP(&inputFile, "input", "i", "test-plan.yaml", "Input YAML file")
 
-	// 3. ADD COMMAND (Bubble Tea)
-	var addCmd = &cobra.Command{
-		Use:   "add",
-		Short: "Interactively add a new test plan to test-plan.yaml",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			m, err := tea.NewProgram(initialModel()).Run()
-			if err != nil {
-				return fmt.Errorf("TUI error: %w", err)
-			}
-			finalModel, ok := m.(addModel)
-			if !ok {
-				return fmt.Errorf("unexpected model type")
-			}
-			if finalModel.canceled {
-				return nil
-			}
-
-			desc := finalModel.description.Value()
-			scenarios := finalModel.parsedScenarios
-			if len(scenarios) == 0 {
-				scenarios = []string{"Default Scenario\nGiven ...\nWhen ...\nThen ..."}
-			}
-			newPlan := TestPlan{
-				Feature:     finalModel.feature.Value(),
-				Type:        finalModel.testType,
-				Status:      finalModel.status,
-				Description: &desc,
-				Scenarios:   scenarios,
-			}
-
-			bg := finalModel.background.Value()
-			if bg != "" {
-				newPlan.Background = &bg
-			}
-
-			if len(finalModel.parsedExamples) > 0 {
-				newPlan.Examples = finalModel.parsedExamples
-			}
-
-			yamlData, err := yaml.Marshal(&newPlan)
-			if err != nil {
-				return fmt.Errorf("failed to marshal YAML: %w", err)
-			}
-			f, err := os.OpenFile("test-plan.yaml", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-			if err != nil {
-				return fmt.Errorf("failed to open test-plan.yaml: %w", err)
-			}
-			defer func() {
-				_ = f.Close()
-			}()
-			if _, err := f.WriteString("\n---\n" + string(yamlData)); err != nil {
-				return fmt.Errorf("failed to write to test-plan.yaml: %w", err)
-			}
-			fmt.Println("Successfully appended new plan to test-plan.yaml")
-			return nil
-		},
-	}
-
-	// 4. SERVE COMMAND
+	// 3. SERVE COMMAND
 	var serveInputFile string
 	var serveName string
 	var serveCmd = &cobra.Command{
@@ -274,7 +215,7 @@ examples: []
 	}
 	cleanCmd.Flags().StringVarP(&cleanDir, "dir", "d", ".", "Directory to clean")
 
-	rootCmd.AddCommand(initCmd, generateCmd, addCmd, serveCmd, deleteCmd, cleanCmd)
+	rootCmd.AddCommand(initCmd, generateCmd, serveCmd, deleteCmd, cleanCmd)
 }
 
 func main() {
