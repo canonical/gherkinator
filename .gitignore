@@ -21,6 +21,9 @@ go.work
 /bin
 *.snap
 
+# `gherkinator`-specific output
+**/.gherkindocs
+
 # IDE-specific directories
 .idea
 .vscode/
