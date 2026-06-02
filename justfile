@@ -55,6 +55,9 @@ test *targets:
         fi
     done
 
+[private]
+test-all: unit
+
 # Run unit tests for specified artifacts, or all artifacts if none specified
 unit *args:
     @echo "Running unit tests..."
