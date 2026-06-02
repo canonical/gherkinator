@@ -71,7 +71,7 @@ scenarios:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "output")
-	rootCmd.SetArgs([]string{"generate", "--format", "gh", "-i", inputFile, "-o", outputDir})
+	rootCmd.SetArgs([]string{"generate", "--format", "gh", "-o", outputDir, inputFile})
 	err = rootCmd.Execute()
 	assert.NoError(t, err)
 	assert.FileExists(t, filepath.Join(outputDir, "test_feature.feature"))
@@ -96,7 +96,7 @@ scenarios:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "output")
-	rootCmd.SetArgs([]string{"generate", "--format", "md", "-i", inputFile, "-o", outputDir})
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir, inputFile})
 	err = rootCmd.Execute()
 	assert.NoError(t, err)
 	assert.FileExists(t, filepath.Join(outputDir, "test_feature.md"))
@@ -128,7 +128,7 @@ scenarios:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "output")
-	rootCmd.SetArgs([]string{"generate", "--format", "md", "-i", inputFile, "-o", outputDir, "--risk", "edge"})
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir, "--risk", "edge", inputFile})
 	err = rootCmd.Execute()
 	assert.NoError(t, err)
 
@@ -162,7 +162,7 @@ scenarios:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "output")
-	rootCmd.SetArgs([]string{"generate", "--format", "md", "-i", inputFile, "-o", outputDir, "--risk", "stable"})
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir, "--risk", "stable", inputFile})
 	err = rootCmd.Execute()
 	assert.NoError(t, err)
 
@@ -185,7 +185,7 @@ scenarios:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "output")
-	rootCmd.SetArgs([]string{"generate", "--format", "md", "-i", inputFile, "-o", outputDir, "--risk", "invalid"})
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir, "--risk", "invalid", inputFile})
 	err = rootCmd.Execute()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "--risk must be one of")
@@ -194,7 +194,191 @@ scenarios:
 func TestGenerateCommand_FileNotFound(t *testing.T) {
 	setupCommands()
 	tmpDir := t.TempDir()
-	rootCmd.SetArgs([]string{"generate", "--format", "gh", "-i", filepath.Join(tmpDir, "nonexistent.yaml"), "-o", tmpDir})
+	rootCmd.SetArgs([]string{"generate", "--format", "gh", "-o", tmpDir, filepath.Join(tmpDir, "nonexistent.yaml")})
 	err := rootCmd.Execute()
 	assert.Error(t, err)
+}
+
+func TestGenerateCommand_MultipleFiles(t *testing.T) {
+	setupCommands()
+	tmpDir := t.TempDir()
+
+	file1 := filepath.Join(tmpDir, "alpha.yaml")
+	require.NoError(t, os.WriteFile(file1, []byte(`feature: "Alpha Feature"
+type: "functional"
+status: "planned"
+risk: "stable"
+scenarios:
+  - |
+    Alpha scenario
+    Given something
+    When action
+    Then result
+`), 0644))
+
+	file2 := filepath.Join(tmpDir, "beta.yaml")
+	require.NoError(t, os.WriteFile(file2, []byte(`feature: "Beta Feature"
+type: "security"
+status: "implemented"
+risk: "stable"
+scenarios:
+  - |
+    Beta scenario
+    Given something
+    When action
+    Then result
+`), 0644))
+
+	outputDir := filepath.Join(tmpDir, "output")
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir, file1, file2})
+	err := rootCmd.Execute()
+	assert.NoError(t, err)
+	assert.FileExists(t, filepath.Join(outputDir, "alpha_feature.md"))
+	assert.FileExists(t, filepath.Join(outputDir, "beta_feature.md"))
+}
+
+func TestGenerateCommand_DirectoryArg(t *testing.T) {
+	setupCommands()
+	tmpDir := t.TempDir()
+	inputDir := filepath.Join(tmpDir, "plans")
+	require.NoError(t, os.MkdirAll(inputDir, 0755))
+
+	require.NoError(t, os.WriteFile(filepath.Join(inputDir, "gamma.yaml"), []byte(`feature: "Gamma Feature"
+type: "functional"
+status: "planned"
+risk: "stable"
+scenarios:
+  - |
+    Gamma scenario
+    Given something
+    When action
+    Then result
+`), 0644))
+
+	require.NoError(t, os.WriteFile(filepath.Join(inputDir, "delta.yml"), []byte(`feature: "Delta Feature"
+type: "performance"
+status: "implemented"
+risk: "stable"
+scenarios:
+  - |
+    Delta scenario
+    Given something
+    When action
+    Then result
+`), 0644))
+
+	outputDir := filepath.Join(tmpDir, "output")
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir, inputDir})
+	err := rootCmd.Execute()
+	assert.NoError(t, err)
+	assert.FileExists(t, filepath.Join(outputDir, "gamma_feature.md"))
+	assert.FileExists(t, filepath.Join(outputDir, "delta_feature.md"))
+}
+
+func TestGenerateCommand_MixedFilesAndDirectories(t *testing.T) {
+	setupCommands()
+	tmpDir := t.TempDir()
+
+	inputDir := filepath.Join(tmpDir, "plans")
+	require.NoError(t, os.MkdirAll(inputDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(inputDir, "epsilon.yaml"), []byte(`feature: "Epsilon Feature"
+type: "functional"
+status: "planned"
+risk: "stable"
+scenarios:
+  - |
+    Epsilon scenario
+    Given x
+`), 0644))
+
+	explicitFile := filepath.Join(tmpDir, "zeta.yaml")
+	require.NoError(t, os.WriteFile(explicitFile, []byte(`feature: "Zeta Feature"
+type: "security"
+status: "implemented"
+risk: "stable"
+scenarios:
+  - |
+    Zeta scenario
+    Given x
+`), 0644))
+
+	outputDir := filepath.Join(tmpDir, "output")
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir, inputDir, explicitFile})
+	err := rootCmd.Execute()
+	assert.NoError(t, err)
+	assert.FileExists(t, filepath.Join(outputDir, "epsilon_feature.md"))
+	assert.FileExists(t, filepath.Join(outputDir, "zeta_feature.md"))
+}
+
+func TestGenerateCommand_DefaultScansCwd(t *testing.T) {
+	setupCommands()
+	tmpDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "theta.yaml"), []byte(`feature: "Theta Feature"
+type: "functional"
+status: "planned"
+risk: "stable"
+scenarios:
+  - |
+    Theta scenario
+    Given x
+`), 0644))
+
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.Chdir(cwd) })
+	require.NoError(t, os.Chdir(tmpDir))
+
+	outputDir := filepath.Join(tmpDir, "output")
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir})
+	err = rootCmd.Execute()
+	assert.NoError(t, err)
+	assert.FileExists(t, filepath.Join(outputDir, "theta_feature.md"))
+}
+
+func TestGenerateCommand_NoFlagsScansCwd(t *testing.T) {
+	setupCommands()
+	tmpDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "iota.yaml"), []byte(`feature: "Iota Feature"
+type: "functional"
+status: "planned"
+risk: "stable"
+scenarios:
+  - |
+    Iota scenario
+    Given x
+`), 0644))
+
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.Chdir(cwd) })
+	require.NoError(t, os.Chdir(tmpDir))
+
+	rootCmd.SetArgs([]string{"generate"})
+	err = rootCmd.Execute()
+	assert.NoError(t, err)
+	assert.FileExists(t, filepath.Join(tmpDir, "iota_feature.feature"))
+}
+
+func TestServeCommand_NoYAMLFiles(t *testing.T) {
+	setupCommands()
+	tmpDir := t.TempDir()
+
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.Chdir(cwd) })
+	require.NoError(t, os.Chdir(tmpDir))
+
+	rootCmd.SetArgs([]string{"serve"})
+	err = rootCmd.Execute()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no YAML files found")
+}
+
+func TestServeCommand_FileNotFound(t *testing.T) {
+	setupCommands()
+	tmpDir := t.TempDir()
+	rootCmd.SetArgs([]string{"serve", filepath.Join(tmpDir, "nonexistent.yaml")})
+	err := rootCmd.Execute()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no such file or directory")
 }

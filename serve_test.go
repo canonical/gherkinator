@@ -542,3 +542,40 @@ func TestUpdateConfPy_SpecialCharsInName(t *testing.T) {
 	// Go's %q properly escapes quotes
 	assert.Contains(t, string(content), `project = "My \"Special\" Project"`)
 }
+
+func TestCleanGeneratedDocs_RemovesTypeDirs(t *testing.T) {
+	tmpDir := t.TempDir()
+	for _, sub := range []string{"functional", "performance", "security"} {
+		require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, sub), 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, sub, "feature.md"), []byte("x"), 0644))
+	}
+	// conf.py and Makefile should remain untouched
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "conf.py"), []byte("p"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "Makefile"), []byte("m"), 0644))
+
+	err := CleanGeneratedDocs(tmpDir)
+	require.NoError(t, err)
+
+	assert.NoDirExists(t, filepath.Join(tmpDir, "functional"))
+	assert.NoDirExists(t, filepath.Join(tmpDir, "performance"))
+	assert.NoDirExists(t, filepath.Join(tmpDir, "security"))
+	assert.FileExists(t, filepath.Join(tmpDir, "conf.py"))
+	assert.FileExists(t, filepath.Join(tmpDir, "Makefile"))
+}
+
+func TestCleanGeneratedDocs_NoTypeDirs(t *testing.T) {
+	tmpDir := t.TempDir()
+	err := CleanGeneratedDocs(tmpDir)
+	assert.NoError(t, err)
+}
+
+func TestCleanGeneratedDocs_UnknownTypePreserved(t *testing.T) {
+	tmpDir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "unrelated"), 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "unrelated", "file.md"), []byte("x"), 0644))
+
+	err := CleanGeneratedDocs(tmpDir)
+	require.NoError(t, err)
+	// Directories not in validTestTypes must be preserved
+	assert.DirExists(t, filepath.Join(tmpDir, "unrelated"))
+}

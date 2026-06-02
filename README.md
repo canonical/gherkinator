@@ -139,33 +139,46 @@ gherkinator init charmed-hpc
 
 ### `generate`
 
-Transpile a YAML test plan into Gherkin feature files or Markdown documents.
+Transpile YAML test plans into Gherkin feature files or Markdown documents.
 
 ```
-gherkinator generate [flags]
+gherkinator generate [files-or-directories...] [flags]
 ```
 
 | Flag | Short | Default | Description |
 | --- | --- | --- | --- |
 | `--format` | | `gh` | Output format: `gh` (Gherkin) or `md` (Markdown) |
-| `--input` | `-i` | `test-plan.yaml` | Path to the input YAML file |
 | `--output-dir` | `-o` | `.` | Directory to write output files into |
 | `--risk` | | | Filter by risk level: `edge`, `beta`, `candidate`, `stable` (cumulative) |
+
+Positional arguments may be any combination of YAML files
+(`.yaml`/`.yml`) and directories; directories are scanned
+non-recursively for YAML files.  When no arguments are supplied,
+the current working directory is scanned for YAML files.
 
 **Examples:**
 
 ```bash
-# Generate .feature files
-gherkinator generate --format gh -i charmed-hpc/test-plan.yaml -o charmed-hpc
+# Generate .feature files from a single input
+gherkinator generate --format gh charmed-hpc/test-plan.yaml -o charmed-hpc
 
 # Generate Markdown files
-gherkinator generate --format md -i charmed-hpc/test-plan.yaml -o charmed-hpc
+gherkinator generate --format md charmed-hpc/test-plan.yaml -o charmed-hpc
 
 # Generate only edge risk plans
-gherkinator generate --format md -i charmed-hpc/test-plan.yaml -o charmed-hpc --risk edge
+gherkinator generate --format md charmed-hpc/test-plan.yaml -o charmed-hpc --risk edge
 
 # Generate edge and beta risk plans
-gherkinator generate --format md -i charmed-hpc/test-plan.yaml -o charmed-hpc --risk beta
+gherkinator generate --format md charmed-hpc/test-plan.yaml -o charmed-hpc --risk beta
+
+# Scan a directory of YAML files
+gherkinator generate --format md charmed-hpc/plans/ -o charmed-hpc
+
+# Combine multiple explicit files and directories
+gherkinator generate --format md plans/ extras/another.yaml -o out
+
+# Scan the current working directory
+gherkinator generate --format gh -o out
 ```
 
 Output filenames are derived from the `feature` field
@@ -178,20 +191,22 @@ Output filenames are derived from the `feature` field
 Serve the test plans as a live Sphinx documentation site.
 
 ```
-gherkinator serve [flags]
+gherkinator serve [files-or-directories...] [flags]
 ```
 
 | Flag | Short | Default | Description |
 | --- | --- | --- | --- |
-| `--input` | `-i` | `test-plan.yaml` | Path to the input YAML file |
-| `--name` | `-n` | input directory name | Project name shown in the docs |
+| `--name` | `-n` | current working directory name | Project name shown in the docs |
 | `--risk` | | | Filter by risk level: `edge`, `beta`, `candidate`, `stable` (cumulative) |
+
+Positional arguments follow the same rules as `generate`: any mix of
+YAML files and directories.  When no arguments are supplied, the
+current working directory is scanned for YAML files.
 
 The command follows this pipeline:
 
-1. Derives the project name from `--name`, or falls back to the base name of
-   the directory containing the input file
-   (e.g. `charmed-hpc/test-plan.yaml` → `charmed-hpc`).
+1. Derives the project name from `--name`, or falls back to the base
+   name of the current working directory.
 2. Clones the
    [Canonical Slim Sphinx docs starter pack](https://github.com/canonical/slim-sphinx-docs-starter-pack)
    into `.gherkindocs/`.
@@ -204,19 +219,23 @@ The command follows this pipeline:
 5. Runs `make run` inside a Bubbletea TUI that streams build/server logs.
    Press **Ctrl+C** to stop the server cleanly.
 
-The YAML file is watched for changes; the docs rebuild automatically on save.
+All input YAML files are watched for changes; the docs rebuild
+automatically when any of them is saved.
 
 **Examples:**
 
 ```bash
-# Serve with default project name (derived from directory)
-gherkinator serve -i charmed-hpc/test-plan.yaml
+# Serve with default project name (current working directory)
+gherkinator serve charmed-hpc/test-plan.yaml
 
 # Override the project name shown in the docs
-gherkinator serve -i charmed-hpc/test-plan.yaml --name "Charmed HPC"
+gherkinator serve charmed-hpc/test-plan.yaml --name "Charmed HPC"
 
 # Serve only edge and beta risk plans
-gherkinator serve -i charmed-hpc/test-plan.yaml --risk beta
+gherkinator serve charmed-hpc/test-plan.yaml --risk beta
+
+# Serve from a directory of YAML files
+gherkinator serve charmed-hpc/plans/ --name "Charmed HPC"
 ```
 
 ---

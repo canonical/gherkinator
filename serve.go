@@ -258,3 +258,17 @@ func PrepareSphinxSite(yamlFile string, cloneDir string, projectName string, ris
 
 	return nil
 }
+
+// CleanGeneratedDocs removes the per-test-type subdirectories inside the
+// Sphinx docs directory so that a subsequent regeneration does not leave
+// stale markdown files for features that have been removed.  Files in the
+// docs root (e.g. conf.py, Makefile, index.md) are preserved.
+func CleanGeneratedDocs(docsDir string) error {
+	for _, testType := range validTestTypes {
+		typeDir := filepath.Join(docsDir, testType)
+		if err := os.RemoveAll(typeDir); err != nil {
+			return fmt.Errorf("failed to remove %s: %w", typeDir, err)
+		}
+	}
+	return nil
+}
