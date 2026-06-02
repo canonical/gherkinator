@@ -263,6 +263,14 @@ func TestDeleteCommand_MissingArgs(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestDeleteCommand_MissingInputFlag(t *testing.T) {
+	setupCommands()
+	rootCmd.SetArgs([]string{"delete", "Job Submission"})
+	err := rootCmd.Execute()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "--input/-i is required")
+}
+
 func TestDeleteCommand_FileNotFound(t *testing.T) {
 	setupCommands()
 	rootCmd.SetArgs([]string{"delete", "-y", "-i", "/nonexistent/file.yaml", "something"})

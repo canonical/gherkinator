@@ -242,26 +242,27 @@ gherkinator serve charmed-hpc/plans/ --name "Charmed HPC"
 
 ### `delete`
 
-Remove one or more test plans from `test-plan.yaml` by feature name
-(case-insensitive).
+Remove one or more test plans from a YAML file by feature name
+(case-insensitive).  The `--input` / `-i` flag is required and
+selects which YAML file to operate on.
 
 ```
 gherkinator delete [feature-names...] [flags]
 ```
 
-| Flag | Short | Default | Description |
-| --- | --- | --- | --- |
-| `--yes` | `-y` | `false` | Skip the confirmation prompt |
-| `--input` | `-i` | `test-plan.yaml` | Path to the input YAML file |
+| Flag | Short | Description |
+| --- | --- | --- |
+| `--yes` | `-y` | Skip the confirmation prompt |
+| `--input` | `-i` | Path to the input YAML file (**required**) |
 
 **Examples:**
 
 ```bash
 # Interactive confirmation
-gherkinator delete "GPU job submission"
+gherkinator delete -i test-plan.yaml "GPU job submission"
 
 # Delete multiple plans without confirmation
-gherkinator delete -y "GPU job submission" "MPI job submission"
+gherkinator delete -y -i test-plan.yaml "GPU job submission" "MPI job submission"
 
 # Delete from a specific file
 gherkinator delete -y -i charmed-hpc/test-plan.yaml "GPU job submission"

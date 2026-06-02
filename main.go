@@ -223,9 +223,12 @@ examples: []
 	var deleteInputFile string
 	var deleteCmd = &cobra.Command{
 		Use:   "delete [feature-names...]",
-		Short: "Delete test plans by feature name from test-plan.yaml",
+		Short: "Delete test plans by feature name from a YAML file",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if deleteInputFile == "" {
+				return fmt.Errorf("--input/-i is required")
+			}
 			plans, err := LoadTestPlans(deleteInputFile)
 			if err != nil {
 				return fmt.Errorf("failed to load test plans: %w", err)
@@ -253,7 +256,7 @@ examples: []
 		},
 	}
 	deleteCmd.Flags().BoolVarP(&skipConfirm, "yes", "y", false, "Skip confirmation prompt")
-	deleteCmd.Flags().StringVarP(&deleteInputFile, "input", "i", "test-plan.yaml", "Input YAML file")
+	deleteCmd.Flags().StringVarP(&deleteInputFile, "input", "i", "", "Path to the input YAML file (required)")
 
 	// 6. CLEAN COMMAND
 	var cleanDir string
