@@ -16,11 +16,13 @@ func TestGenerateGherkin_BasicScenario(t *testing.T) {
 		Feature:   "Login Feature",
 		Type:      "functional",
 		Status:    "planned",
+		Risk:      "stable",
 		Scenarios: []string{"User logs in\nGiven a user exists\nWhen the user logs in\nThen the user sees the dashboard"},
 	}
 	result := GenerateGherkin(plan)
 	assert.Contains(t, result, "Feature: Login Feature")
 	assert.Contains(t, result, "@functional")
+	assert.Contains(t, result, "@stable")
 	assert.Contains(t, result, "Scenario: User logs in")
 	assert.Contains(t, result, "Given a user exists")
 	assert.Contains(t, result, "When the user logs in")
@@ -32,6 +34,7 @@ func TestGenerateGherkin_WithDescription(t *testing.T) {
 		Feature:     "Login Feature",
 		Type:        "functional",
 		Status:      "planned",
+		Risk:        "stable",
 		Description: strPtr("This is a description"),
 		Scenarios:   []string{"A scenario\nGiven something"},
 	}
@@ -44,6 +47,7 @@ func TestGenerateGherkin_WithBackground(t *testing.T) {
 		Feature:    "Login Feature",
 		Type:       "functional",
 		Status:     "planned",
+		Risk:       "stable",
 		Background: strPtr("Given the system is running"),
 		Scenarios:  []string{"A scenario\nGiven something"},
 	}
@@ -57,6 +61,7 @@ func TestGenerateGherkin_WithExamples(t *testing.T) {
 		Feature:   "Parameterized Feature",
 		Type:      "functional",
 		Status:    "planned",
+		Risk:      "stable",
 		Scenarios: []string{"User logs in with <username>\nGiven a user <username>\nWhen the user enters <password>"},
 		Examples:  [][]string{{"alice", "pass123"}, {"bob", "pass456"}},
 	}
@@ -73,6 +78,7 @@ func TestGenerateGherkin_ScenarioWithoutSteps(t *testing.T) {
 		Feature:   "Minimal Feature",
 		Type:      "functional",
 		Status:    "planned",
+		Risk:      "stable",
 		Scenarios: []string{"Just a title"},
 	}
 	result := GenerateGherkin(plan)
@@ -84,6 +90,7 @@ func TestGenerateGherkin_NilDescription(t *testing.T) {
 		Feature:   "No Desc",
 		Type:      "functional",
 		Status:    "planned",
+		Risk:      "stable",
 		Scenarios: []string{"Scenario title\nGiven x"},
 	}
 	result := GenerateGherkin(plan)
@@ -95,6 +102,7 @@ func TestGenerateGherkin_NilBackground(t *testing.T) {
 		Feature:   "No Background",
 		Type:      "functional",
 		Status:    "planned",
+		Risk:      "stable",
 		Scenarios: []string{"Scenario title\nGiven x"},
 	}
 	result := GenerateGherkin(plan)
@@ -106,12 +114,14 @@ func TestGenerateMarkdown_BasicPlan(t *testing.T) {
 		Feature:   "Login Feature",
 		Type:      "functional",
 		Status:    "planned",
+		Risk:      "stable",
 		Scenarios: []string{"User logs in\nGiven a user exists\nWhen the user logs in\nThen the user sees the dashboard"},
 	}
 	result := GenerateMarkdown(plan)
 	assert.Contains(t, result, "# Login Feature")
 	assert.Contains(t, result, "- **Type:** functional")
 	assert.Contains(t, result, "- **Status:** planned")
+	assert.Contains(t, result, "- **Risk:** stable")
 	assert.Contains(t, result, "## Scenarios")
 	assert.Contains(t, result, "### User logs in")
 	assert.Contains(t, result, "**Given** a user exists")
@@ -124,6 +134,7 @@ func TestGenerateMarkdown_WithDescription(t *testing.T) {
 		Feature:     "A Feature",
 		Type:        "solution",
 		Status:      "implemented",
+		Risk:        "stable",
 		Description: strPtr("Some description text"),
 		Scenarios:   []string{"A scenario"},
 	}
@@ -137,6 +148,7 @@ func TestGenerateMarkdown_WithBackground(t *testing.T) {
 		Feature:    "A Feature",
 		Type:       "solution",
 		Status:     "implemented",
+		Risk:       "stable",
 		Background: strPtr("Given precondition A\nGiven precondition B"),
 		Scenarios:  []string{"A scenario"},
 	}
@@ -151,6 +163,7 @@ func TestGenerateMarkdown_WithIssuesAndDocs(t *testing.T) {
 		Feature:   "A Feature",
 		Type:      "security",
 		Status:    "deprecated",
+		Risk:      "stable",
 		Issues:    strPtr("https://github.com/issues/1"),
 		Docs:      strPtr("https://docs.example.com"),
 		Scenarios: []string{"A scenario"},
@@ -165,6 +178,7 @@ func TestGenerateMarkdown_NilOptionalFields(t *testing.T) {
 		Feature:   "Simple",
 		Type:      "functional",
 		Status:    "planned",
+		Risk:      "stable",
 		Scenarios: []string{"Test scenario"},
 	}
 	result := GenerateMarkdown(plan)
@@ -179,6 +193,7 @@ func TestGenerateMarkdown_AndStep(t *testing.T) {
 		Feature:   "And Steps",
 		Type:      "functional",
 		Status:    "planned",
+		Risk:      "stable",
 		Scenarios: []string{"And scenario\nGiven X\nAnd Y\nWhen Z\nThen W"},
 	}
 	result := GenerateMarkdown(plan)
@@ -190,6 +205,7 @@ func TestGenerateMarkdown_ScenarioWithoutSteps(t *testing.T) {
 		Feature:   "Minimal",
 		Type:      "functional",
 		Status:    "planned",
+		Risk:      "stable",
 		Scenarios: []string{"Just a title"},
 	}
 	result := GenerateMarkdown(plan)
@@ -210,6 +226,7 @@ func TestGenerateGherkin_MultipleScenarios(t *testing.T) {
 		Feature: "Multi Scenario",
 		Type:    "functional",
 		Status:  "planned",
+		Risk:    "stable",
 		Scenarios: []string{
 			"First scenario\nGiven A\nWhen B\nThen C",
 			"Second scenario\nGiven D\nWhen E\nThen F",
@@ -225,6 +242,7 @@ func TestGenerateMarkdown_MultipleScenarios(t *testing.T) {
 		Feature: "Multi Scenario",
 		Type:    "functional",
 		Status:  "planned",
+		Risk:    "stable",
 		Scenarios: []string{
 			"First scenario\nGiven A\nWhen B\nThen C",
 			"Second scenario\nGiven D\nWhen E\nThen F",
@@ -240,6 +258,7 @@ func TestGenerateMarkdown_WithExamples(t *testing.T) {
 		Feature:   "Parameterized Feature",
 		Type:      "functional",
 		Status:    "planned",
+		Risk:      "stable",
 		Scenarios: []string{"User logs in with <username>\nGiven a user <username>\nWhen the user enters <password>"},
 		Examples:  [][]string{{"alice", "pass123"}, {"bob", "pass456"}},
 	}
@@ -258,6 +277,7 @@ func TestGenerateMarkdown_WithExamplesNoParams(t *testing.T) {
 		Feature:   "Feature",
 		Type:      "functional",
 		Status:    "planned",
+		Risk:      "stable",
 		Scenarios: []string{"A scenario\nGiven something"},
 		Examples:  [][]string{{"val1", "val2"}},
 	}
@@ -275,6 +295,7 @@ func TestGenerateMarkdown_NoExamples(t *testing.T) {
 		Feature:   "No Examples",
 		Type:      "functional",
 		Status:    "planned",
+		Risk:      "stable",
 		Scenarios: []string{"A scenario\nGiven something"},
 	}
 	result := GenerateMarkdown(plan)

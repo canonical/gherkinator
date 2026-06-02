@@ -13,18 +13,21 @@ import (
 const multiDocYAML = `feature: "Job Submission"
 type: "functional"
 status: "planned"
+risk: "stable"
 scenarios:
   - "Submit a job"
 ---
 feature: "GPU Job Submission"
 type: "performance"
 status: "implemented"
+risk: "stable"
 scenarios:
   - "Submit a GPU job"
 ---
 feature: "Network Config"
 type: "security"
 status: "planned"
+risk: "stable"
 scenarios:
   - "Configure network"
 `
@@ -76,8 +79,8 @@ func TestWriteTestPlans_Success(t *testing.T) {
 	outputFile := filepath.Join(tmpDir, "out.yaml")
 
 	plans := []TestPlan{
-		{Feature: "Feature A", Type: "functional", Status: "planned", Scenarios: []string{"Scenario A"}},
-		{Feature: "Feature B", Type: "security", Status: "implemented", Scenarios: []string{"Scenario B"}},
+		{Feature: "Feature A", Type: "functional", Status: "planned", Risk: "stable", Scenarios: []string{"Scenario A"}},
+		{Feature: "Feature B", Type: "security", Status: "implemented", Risk: "stable", Scenarios: []string{"Scenario B"}},
 	}
 
 	err := WriteTestPlans(outputFile, plans)
@@ -99,9 +102,9 @@ func TestWriteTestPlans_InvalidPath(t *testing.T) {
 
 func TestDeleteTestPlans_DeleteOne(t *testing.T) {
 	plans := []TestPlan{
-		{Feature: "Job Submission", Type: "functional", Status: "planned"},
-		{Feature: "GPU Job Submission", Type: "performance", Status: "implemented"},
-		{Feature: "Network Config", Type: "security", Status: "planned"},
+		{Feature: "Job Submission", Type: "functional", Status: "planned", Risk: "stable"},
+		{Feature: "GPU Job Submission", Type: "performance", Status: "implemented", Risk: "stable"},
+		{Feature: "Network Config", Type: "security", Status: "planned", Risk: "stable"},
 	}
 
 	remaining, deleted := DeleteTestPlans(plans, []string{"Job Submission"})
@@ -114,9 +117,9 @@ func TestDeleteTestPlans_DeleteOne(t *testing.T) {
 
 func TestDeleteTestPlans_DeleteMultiple(t *testing.T) {
 	plans := []TestPlan{
-		{Feature: "Job Submission", Type: "functional", Status: "planned"},
-		{Feature: "GPU Job Submission", Type: "performance", Status: "implemented"},
-		{Feature: "Network Config", Type: "security", Status: "planned"},
+		{Feature: "Job Submission", Type: "functional", Status: "planned", Risk: "stable"},
+		{Feature: "GPU Job Submission", Type: "performance", Status: "implemented", Risk: "stable"},
+		{Feature: "Network Config", Type: "security", Status: "planned", Risk: "stable"},
 	}
 
 	remaining, deleted := DeleteTestPlans(plans, []string{"Job Submission", "GPU Job Submission"})
@@ -127,8 +130,8 @@ func TestDeleteTestPlans_DeleteMultiple(t *testing.T) {
 
 func TestDeleteTestPlans_CaseInsensitive(t *testing.T) {
 	plans := []TestPlan{
-		{Feature: "Job Submission", Type: "functional", Status: "planned"},
-		{Feature: "Network Config", Type: "security", Status: "planned"},
+		{Feature: "Job Submission", Type: "functional", Status: "planned", Risk: "stable"},
+		{Feature: "Network Config", Type: "security", Status: "planned", Risk: "stable"},
 	}
 
 	remaining, deleted := DeleteTestPlans(plans, []string{"job submission"})
@@ -139,7 +142,7 @@ func TestDeleteTestPlans_CaseInsensitive(t *testing.T) {
 
 func TestDeleteTestPlans_NoMatch(t *testing.T) {
 	plans := []TestPlan{
-		{Feature: "Job Submission", Type: "functional", Status: "planned"},
+		{Feature: "Job Submission", Type: "functional", Status: "planned", Risk: "stable"},
 	}
 
 	remaining, deleted := DeleteTestPlans(plans, []string{"nonexistent"})
@@ -149,8 +152,8 @@ func TestDeleteTestPlans_NoMatch(t *testing.T) {
 
 func TestDeleteTestPlans_DeleteAll(t *testing.T) {
 	plans := []TestPlan{
-		{Feature: "Job Submission", Type: "functional", Status: "planned"},
-		{Feature: "Network Config", Type: "security", Status: "planned"},
+		{Feature: "Job Submission", Type: "functional", Status: "planned", Risk: "stable"},
+		{Feature: "Network Config", Type: "security", Status: "planned", Risk: "stable"},
 	}
 
 	remaining, deleted := DeleteTestPlans(plans, []string{"Job Submission", "Network Config"})

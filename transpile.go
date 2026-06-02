@@ -21,7 +21,7 @@ func GenerateGherkin(plan TestPlan) string {
 		}
 	}
 
-	fmt.Fprintf(&builder, "\n  @%s\n", plan.Type)
+	fmt.Fprintf(&builder, "\n  @%s @%s\n", plan.Type, plan.Risk)
 
 	hasExamples := len(plan.Examples) > 0
 	for _, scenario := range plan.Scenarios {
@@ -72,6 +72,7 @@ func GenerateMarkdown(plan TestPlan) string {
 	fmt.Fprintf(&builder, "# %s\n\n", plan.Feature)
 	fmt.Fprintf(&builder, "- **Type:** %s\n", plan.Type)
 	fmt.Fprintf(&builder, "- **Status:** %s\n", plan.Status)
+	fmt.Fprintf(&builder, "- **Risk:** %s\n", plan.Risk)
 	if plan.Issues != nil {
 		fmt.Fprintf(&builder, "- **Issues:** %s\n", *plan.Issues)
 	}

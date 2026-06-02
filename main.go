@@ -37,6 +37,7 @@ func setupCommands() {
 feature: ""
 type: ""
 status: ""
+risk: ""
 description: ""
 scenarios:
   - ""
@@ -55,6 +56,7 @@ examples: []
 	var outputDir string
 	var format string
 	var inputFile string
+	var riskFilter string
 	var generateCmd = &cobra.Command{
 		Use:   "generate",
 		Short: "Generate gherkin (gh) or markdown (md) files",
@@ -62,7 +64,12 @@ examples: []
 			if format != "gh" && format != "md" {
 				return fmt.Errorf("--format must be either 'gh' or 'md'")
 			}
-			if err := ProcessFile(inputFile, format, outputDir); err != nil {
+			if riskFilter != "" {
+				if _, ok := riskOrder[riskFilter]; !ok {
+					return fmt.Errorf("--risk must be one of 'edge', 'beta', 'candidate', or 'stable'")
+				}
+			}
+			if err := ProcessFile(inputFile, format, outputDir, riskFilter); err != nil {
 				return fmt.Errorf("generation failed: %w", err)
 			}
 			fmt.Println("Generation complete.")
@@ -72,14 +79,21 @@ examples: []
 	generateCmd.Flags().StringVarP(&outputDir, "output-dir", "o", ".", "Directory to save generated files")
 	generateCmd.Flags().StringVar(&format, "format", "gh", "Output format (gh or md)")
 	generateCmd.Flags().StringVarP(&inputFile, "input", "i", "test-plan.yaml", "Input YAML file")
+	generateCmd.Flags().StringVar(&riskFilter, "risk", "", "Filter by risk level (edge, beta, candidate, stable)")
 
 	// 3. SERVE COMMAND
 	var serveInputFile string
 	var serveName string
+	var serveRisk string
 	var serveCmd = &cobra.Command{
 		Use:   "serve",
 		Short: "Serve test plan docs and watch for changes",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if serveRisk != "" {
+				if _, ok := riskOrder[serveRisk]; !ok {
+					return fmt.Errorf("--risk must be one of 'edge', 'beta', 'candidate', or 'stable'")
+				}
+			}
 			// Derive project name: --name flag, or the directory name of the input file
 			projectName := serveName
 			if projectName == "" {
@@ -105,7 +119,7 @@ examples: []
 			}
 
 			// 2-4. Generate markdown, build toctree index, update conf.py
-			if err := PrepareSphinxSite(serveInputFile, tmpDir, projectName); err != nil {
+			if err := PrepareSphinxSite(serveInputFile, tmpDir, projectName, serveRisk); err != nil {
 				return fmt.Errorf("failed to prepare sphinx site: %w", err)
 			}
 
@@ -129,7 +143,7 @@ examples: []
 						}
 						if event.Has(fsnotify.Write) {
 							fmt.Println("Change detected. Rebuilding docs...")
-							if err := PrepareSphinxSite(serveInputFile, tmpDir, projectName); err != nil {
+							if err := PrepareSphinxSite(serveInputFile, tmpDir, projectName, serveRisk); err != nil {
 								//nolint:errcheck // Writing to stderr; error is not actionable
 								fmt.Fprintf(os.Stderr, "Rebuild error: %v\n", err)
 							}
@@ -162,6 +176,7 @@ examples: []
 	}
 	serveCmd.Flags().StringVarP(&serveInputFile, "input", "i", "test-plan.yaml", "Input YAML file")
 	serveCmd.Flags().StringVarP(&serveName, "name", "n", "", "Project name for the documentation (defaults to input directory name)")
+	serveCmd.Flags().StringVar(&serveRisk, "risk", "", "Filter by risk level (edge, beta, candidate, stable)")
 
 	// 5. DELETE COMMAND
 	var skipConfirm bool

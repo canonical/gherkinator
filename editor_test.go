@@ -33,14 +33,18 @@ func TestTextEditor_NoEditorAvailable(t *testing.T) {
 	t.Setenv("EDITOR", "")
 
 	path := os.Getenv("PATH")
-	os.Setenv("PATH", "/nonexistent")
+	if err := os.Setenv("PATH", "/nonexistent"); err != nil {
+		t.Fatalf("failed to set PATH: %v", err)
+	}
 
 	content := []byte("test content")
 	_, err := TextEditor(content)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no text editor found")
 
-	os.Setenv("PATH", path)
+	if err := os.Setenv("PATH", path); err != nil {
+		t.Fatalf("failed to restore PATH: %v", err)
+	}
 }
 
 func TestEditHelpTemplate_ContainsSchemaFields(t *testing.T) {
@@ -48,6 +52,7 @@ func TestEditHelpTemplate_ContainsSchemaFields(t *testing.T) {
 	assert.Contains(t, template, "feature:")
 	assert.Contains(t, template, "type:")
 	assert.Contains(t, template, "status:")
+	assert.Contains(t, template, "risk:")
 	assert.Contains(t, template, "scenarios:")
 	assert.Contains(t, template, "examples:")
 }
@@ -68,6 +73,14 @@ func TestEditHelpTemplate_ContainsValidStatuses(t *testing.T) {
 	assert.Contains(t, template, "deprecated")
 }
 
+func TestEditHelpTemplate_ContainsValidRisks(t *testing.T) {
+	template := editHelpTemplate()
+	assert.Contains(t, template, "edge")
+	assert.Contains(t, template, "beta")
+	assert.Contains(t, template, "candidate")
+	assert.Contains(t, template, "stable")
+}
+
 func TestValidateEditContent_Success(t *testing.T) {
 	tmpDir := t.TempDir()
 	filename := tmpDir + "/test-plan.yaml"
@@ -75,6 +88,7 @@ func TestValidateEditContent_Success(t *testing.T) {
 	yamlContent := `feature: "Test Feature"
 type: "functional"
 status: "planned"
+risk: "stable"
 scenarios:
   - "Test scenario"
 `
@@ -94,6 +108,7 @@ func TestValidateEditContent_InvalidType(t *testing.T) {
 	yamlContent := `feature: "Test Feature"
 type: "invalid_type"
 status: "planned"
+risk: "stable"
 scenarios:
   - "Test scenario"
 `
@@ -109,6 +124,7 @@ func TestValidateEditContent_InvalidStatus(t *testing.T) {
 	yamlContent := `feature: "Test Feature"
 type: "functional"
 status: "invalid_status"
+risk: "stable"
 scenarios:
   - "Test scenario"
 `
@@ -124,6 +140,7 @@ func TestValidateEditContent_EmptyFeature(t *testing.T) {
 	yamlContent := `feature: ""
 type: "functional"
 status: "planned"
+risk: "stable"
 scenarios:
   - "Test scenario"
 `
@@ -142,12 +159,14 @@ func TestValidateEditContent_MultiplePlans(t *testing.T) {
 	yamlContent := `feature: "Feature 1"
 type: "functional"
 status: "planned"
+risk: "stable"
 scenarios:
   - "Scenario 1"
 ---
 feature: "Feature 2"
 type: "security"
 status: "implemented"
+risk: "stable"
 scenarios:
   - "Scenario 2"
 `
@@ -184,6 +203,7 @@ func TestValidateEditContent_FileError(t *testing.T) {
 	yamlContent := `feature: "Test"
 type: "functional"
 status: "planned"
+risk: "stable"
 scenarios:
   - "Scenario"
 `

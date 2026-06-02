@@ -7,6 +7,7 @@ type TestPlan struct {
 	Feature     string     `yaml:"feature"`
 	Type        string     `yaml:"type"`
 	Status      string     `yaml:"status"`
+	Risk        string     `yaml:"risk"`
 	Issues      *string    `yaml:"issues,omitempty"`
 	Docs        *string    `yaml:"docs,omitempty"`
 	Description *string    `yaml:"description,omitempty"`
@@ -15,7 +16,7 @@ type TestPlan struct {
 	Examples    [][]string `yaml:"examples,omitempty"`
 }
 
-// ValidateSchema ensures the test plan uses accepted types and statuses.
+// ValidateSchema ensures the test plan uses accepted types, statuses, and risks.
 func ValidateSchema(plan TestPlan) error {
 	validTypes := map[string]bool{
 		"functional":  true,
@@ -35,6 +36,16 @@ func ValidateSchema(plan TestPlan) error {
 	}
 	if !validStatuses[plan.Status] {
 		return fmt.Errorf("invalid status '%s': must be one of 'planned', 'implemented', or 'deprecated'", plan.Status)
+	}
+
+	validRisks := map[string]bool{
+		"edge":      true,
+		"beta":      true,
+		"candidate": true,
+		"stable":    true,
+	}
+	if !validRisks[plan.Risk] {
+		return fmt.Errorf("invalid risk '%s': must be one of 'edge', 'beta', 'candidate', or 'stable'", plan.Risk)
 	}
 	return nil
 }

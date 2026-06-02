@@ -22,6 +22,7 @@ func editHelpTemplate() string {
 ### type: functional            # One of: functional | solution | performance
 ###                             #         reliability | security
 ### status: planned             # One of: planned | implemented | deprecated
+### risk: stable                # One of: edge | beta | candidate | stable
 ### description: "Test GPU jobs"
 ### background: |-
 ###   Given the cluster is available

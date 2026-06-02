@@ -34,6 +34,7 @@ func TestInitCommand_CreatesDirectoryAndFile(t *testing.T) {
 	assert.Contains(t, string(content), "feature:")
 	assert.Contains(t, string(content), "type:")
 	assert.Contains(t, string(content), "status:")
+	assert.Contains(t, string(content), "risk:")
 	assert.Contains(t, string(content), "scenarios:")
 }
 
@@ -57,6 +58,7 @@ func TestGenerateCommand_GherkinFormat(t *testing.T) {
 	yamlContent := `feature: "Test Feature"
 type: "functional"
 status: "planned"
+risk: "stable"
 scenarios:
   - |
     User logs in
@@ -81,6 +83,7 @@ func TestGenerateCommand_MarkdownFormat(t *testing.T) {
 	yamlContent := `feature: "Test Feature"
 type: "functional"
 status: "planned"
+risk: "stable"
 scenarios:
   - |
     User logs in
@@ -97,6 +100,95 @@ scenarios:
 	err = rootCmd.Execute()
 	assert.NoError(t, err)
 	assert.FileExists(t, filepath.Join(outputDir, "test_feature.md"))
+}
+
+func TestGenerateCommand_RiskFilter(t *testing.T) {
+	setupCommands()
+	tmpDir := t.TempDir()
+	yamlContent := `feature: "Edge Feature"
+type: "functional"
+status: "planned"
+risk: "edge"
+scenarios:
+  - |
+    Edge scenario
+    Given something
+---
+feature: "Stable Feature"
+type: "security"
+status: "implemented"
+risk: "stable"
+scenarios:
+  - |
+    Stable scenario
+    Given something else
+`
+	inputFile := filepath.Join(tmpDir, "test-plan.yaml")
+	err := os.WriteFile(inputFile, []byte(yamlContent), 0644)
+	require.NoError(t, err)
+
+	outputDir := filepath.Join(tmpDir, "output")
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-i", inputFile, "-o", outputDir, "--risk", "edge"})
+	err = rootCmd.Execute()
+	assert.NoError(t, err)
+
+	assert.FileExists(t, filepath.Join(outputDir, "edge_feature.md"))
+	assert.NoFileExists(t, filepath.Join(outputDir, "stable_feature.md"))
+}
+
+func TestGenerateCommand_RiskFilterStable(t *testing.T) {
+	setupCommands()
+	tmpDir := t.TempDir()
+	yamlContent := `feature: "Edge Feature"
+type: "functional"
+status: "planned"
+risk: "edge"
+scenarios:
+  - |
+    Edge scenario
+    Given something
+---
+feature: "Stable Feature"
+type: "security"
+status: "implemented"
+risk: "stable"
+scenarios:
+  - |
+    Stable scenario
+    Given something else
+`
+	inputFile := filepath.Join(tmpDir, "test-plan.yaml")
+	err := os.WriteFile(inputFile, []byte(yamlContent), 0644)
+	require.NoError(t, err)
+
+	outputDir := filepath.Join(tmpDir, "output")
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-i", inputFile, "-o", outputDir, "--risk", "stable"})
+	err = rootCmd.Execute()
+	assert.NoError(t, err)
+
+	assert.FileExists(t, filepath.Join(outputDir, "edge_feature.md"))
+	assert.FileExists(t, filepath.Join(outputDir, "stable_feature.md"))
+}
+
+func TestGenerateCommand_InvalidRiskFlag(t *testing.T) {
+	setupCommands()
+	tmpDir := t.TempDir()
+	yamlContent := `feature: "Test"
+type: "functional"
+status: "planned"
+risk: "stable"
+scenarios:
+  - "test"
+`
+	inputFile := filepath.Join(tmpDir, "test-plan.yaml")
+	err := os.WriteFile(inputFile, []byte(yamlContent), 0644)
+	require.NoError(t, err)
+
+	outputDir := filepath.Join(tmpDir, "output")
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-i", inputFile, "-o", outputDir, "--risk", "invalid"})
+	err = rootCmd.Execute()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "--risk must be one of")
 }
 
 func TestGenerateCommand_FileNotFound(t *testing.T) {

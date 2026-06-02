@@ -55,6 +55,8 @@ type: functional                # One of: functional | solution | performance
 
 status: planned                 # One of: planned | implemented | deprecated
 
+risk: stable                    # One of: edge | beta | candidate | stable
+
 scenarios:                      # At least one scenario string.
   - |-                          # The first line is the scenario title;
     Default Scenario            # subsequent lines are Gherkin steps.
@@ -148,6 +150,7 @@ gherkinator generate [flags]
 | `--format` | | `gh` | Output format: `gh` (Gherkin) or `md` (Markdown) |
 | `--input` | `-i` | `test-plan.yaml` | Path to the input YAML file |
 | `--output-dir` | `-o` | `.` | Directory to write output files into |
+| `--risk` | | | Filter by risk level: `edge`, `beta`, `candidate`, `stable` (cumulative) |
 
 **Examples:**
 
@@ -157,6 +160,12 @@ gherkinator generate --format gh -i charmed-hpc/test-plan.yaml -o charmed-hpc
 
 # Generate Markdown files
 gherkinator generate --format md -i charmed-hpc/test-plan.yaml -o charmed-hpc
+
+# Generate only edge risk plans
+gherkinator generate --format md -i charmed-hpc/test-plan.yaml -o charmed-hpc --risk edge
+
+# Generate edge and beta risk plans
+gherkinator generate --format md -i charmed-hpc/test-plan.yaml -o charmed-hpc --risk beta
 ```
 
 Output filenames are derived from the `feature` field
@@ -176,6 +185,7 @@ gherkinator serve [flags]
 | --- | --- | --- | --- |
 | `--input` | `-i` | `test-plan.yaml` | Path to the input YAML file |
 | `--name` | `-n` | input directory name | Project name shown in the docs |
+| `--risk` | | | Filter by risk level: `edge`, `beta`, `candidate`, `stable` (cumulative) |
 
 The command follows this pipeline:
 
@@ -204,6 +214,9 @@ gherkinator serve -i charmed-hpc/test-plan.yaml
 
 # Override the project name shown in the docs
 gherkinator serve -i charmed-hpc/test-plan.yaml --name "Charmed HPC"
+
+# Serve only edge and beta risk plans
+gherkinator serve -i charmed-hpc/test-plan.yaml --risk beta
 ```
 
 ---

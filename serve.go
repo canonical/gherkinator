@@ -24,7 +24,7 @@ var validTestTypes = []string{
 // files organised by test type inside the docs directory.  Each plan is
 // written to <docsDir>/<type>/<safe_feature_name>.md.  It returns the
 // list of generated plans so callers can build a toctree.
-func GenerateSphinxDocs(yamlFile string, docsDir string) ([]TestPlan, error) {
+func GenerateSphinxDocs(yamlFile string, docsDir string, riskFilter string) ([]TestPlan, error) {
 	file, err := os.Open(yamlFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
@@ -48,11 +48,17 @@ func GenerateSphinxDocs(yamlFile string, docsDir string) ([]TestPlan, error) {
 			return nil, fmt.Errorf("validation error in document %d: %w", i, err)
 		}
 
+		plans = append(plans, plan)
+	}
+
+	filteredPlans := filterPlansByRisk(plans, riskFilter)
+
+	for _, plan := range filteredPlans {
 		output := GenerateMarkdown(plan)
 
 		safeFilename := strings.ReplaceAll(strings.ToLower(plan.Feature), " ", "_")
 		if safeFilename == "" {
-			safeFilename = fmt.Sprintf("plan_%d", i)
+			safeFilename = "plan"
 		}
 
 		typeDir := filepath.Join(docsDir, plan.Type)
@@ -64,10 +70,9 @@ func GenerateSphinxDocs(yamlFile string, docsDir string) ([]TestPlan, error) {
 		if err := os.WriteFile(outPath, []byte(output), 0644); err != nil {
 			return nil, fmt.Errorf("failed to write %s: %w", outPath, err)
 		}
-
-		plans = append(plans, plan)
 	}
-	return plans, nil
+
+	return filteredPlans, nil
 }
 
 // BuildTypeLandingPages creates a sub-landing page for each test type
@@ -234,10 +239,10 @@ func UpdateConfPy(confPath string, projectName string) error {
 // starter pack: generates docs into type subdirectories, builds the
 // toctree index with sub-landing pages per test type, and sets the
 // project name in conf.py.
-func PrepareSphinxSite(yamlFile string, cloneDir string, projectName string) error {
+func PrepareSphinxSite(yamlFile string, cloneDir string, projectName string, riskFilter string) error {
 	docsDir := filepath.Join(cloneDir, "docs")
 
-	plans, err := GenerateSphinxDocs(yamlFile, docsDir)
+	plans, err := GenerateSphinxDocs(yamlFile, docsDir, riskFilter)
 	if err != nil {
 		return fmt.Errorf("failed to generate sphinx docs: %w", err)
 	}
