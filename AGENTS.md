@@ -78,6 +78,8 @@ just vet              # Vet all Go source code.
 6. Vet: `just vet` (uses `go vet`). Fix all vetting errors.
 7. Repeat for each new or modified file.
 
+Pipe to the output of `just` to either `head` or `tail` to capture the `stdout` and/or `stderr`.
+
 ## Commit conventions
 
 - Commits must be signed off (`Signed-off-by:` trailer) **by the human**. Agents
