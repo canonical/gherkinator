@@ -32,8 +32,7 @@ clean:
     rm -rf bin/ coverage.out
     rm -rf .gherkindocs
     @echo "Cleaning snapcraft cache and artifacts..."
-    snapcraft clean || true
-    rm -f *.snap
+    rm -rf snap/ *.snap
 
 # Apply static checks
 check: lint vet
@@ -83,12 +82,12 @@ vet:
 # Build specified artifacts, or all artifacts if none specified
 build *args:
     @echo "Building gherkinator..."
-    go build -o bin/gherkinator {{args}} .
+    go build -o bin/gherkinator {{args}} ./cmd/gherkinator/
 
 # Install the binary to the system GOPATH
 install: build
     @echo "Installing gherkinator..."
-    go install .
+    go install ./cmd/gherkinator/
 
 # View HTML coverage report
 coverage: unit
@@ -98,4 +97,6 @@ coverage: unit
 # Build the snap package using snapcraft
 snap:
     @echo "Building snap package..."
-    snapcraft
+    cp -r build/snap ./snap
+    snapcraft pack
+    rm -rf snap/

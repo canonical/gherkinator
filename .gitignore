@@ -19,6 +19,7 @@ go.work
 
 # Build related directories and outputs
 /bin
+/snap
 *.snap
 
 # `gherkinator`-specific output

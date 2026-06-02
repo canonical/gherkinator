@@ -122,17 +122,29 @@ scenarios:
 
 ### `init`
 
-Initialise a new test plan directory with an empty `test-plan.yaml`.
+Initialise a new test plan directory with an empty YAML file.
 
 ```
-gherkinator init <directory-name>
+gherkinator init [directory-name] [flags]
 ```
 
-**Example:**
+| Flag | Short | Default | Description |
+| --- | --- | --- | --- |
+| `--name` | `-n` | `test-plan.yaml` | Name of the YAML file to create (`.yaml` is appended if missing) |
+
+**Examples:**
 
 ```bash
+# Default: creates charmed-hpc/test-plan.yaml
 gherkinator init charmed-hpc
-# Creates charmed-hpc/test-plan.yaml
+
+# Custom name (extension auto-appended)
+gherkinator init charmed-hpc --name my-test-plan
+# Creates charmed-hpc/my-test-plan.yaml
+
+# Custom name with .yml extension (preserved as-is)
+gherkinator init charmed-hpc --name my-test-plan.yml
+# Creates charmed-hpc/my-test-plan.yml
 ```
 
 ---
