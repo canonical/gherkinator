@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"go.yaml.in/yaml/v3"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"gherkinator/internal/common"
 )
@@ -24,6 +26,10 @@ var validTestTypes = []string{
 	"reliability",
 	"security",
 }
+
+// titleCaser is the Unicode-aware title caser used to render test
+// type names in generated documentation headers.
+var titleCaser = cases.Title(language.English)
 
 // GenerateSphinxDocs reads a YAML test plan file and generates Markdown
 // files organized by test type inside the docs directory.  Each plan is
@@ -99,8 +105,7 @@ func BuildTypeLandingPages(docsDir string, grouped map[string][]string) error {
 		}
 
 		var builder strings.Builder
-		//nolint:staticcheck // strings.Title is fine here
-		fmt.Fprintf(&builder, "# %s\n\n", strings.Title(testType))
+		fmt.Fprintf(&builder, "# %s\n\n", titleCaser.String(testType))
 		builder.WriteString("```{toctree}\n")
 		builder.WriteString(":maxdepth: 1\n\n")
 		for _, f := range files {
@@ -174,8 +179,7 @@ func BuildSphinxIndex(docsDir string, plans []common.TestPlan) error {
 		if !ok || len(typeEntries) == 0 {
 			continue
 		}
-		//nolint:staticcheck // strings.Title is fine here
-		fmt.Fprintf(&builder, "## %s\n\n", strings.Title(testType))
+		fmt.Fprintf(&builder, "## %s\n\n", titleCaser.String(testType))
 		for _, entry := range typeEntries {
 			displayName := entry.Feature
 			if displayName == "" {
