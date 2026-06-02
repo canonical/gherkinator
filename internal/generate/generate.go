@@ -27,7 +27,11 @@ func ValidateGherkin(gherkinText string) error {
 
 // ProcessFile reads a YAML file (handling multi-document streams), validates
 // schemas, transpiles to the requested format, and writes output files.
-func ProcessFile(filename string, format string, outputDir string, riskFilter string) error {
+//
+// riskFilter and statusFilter are intersected: a plan must satisfy both
+// filters (or either filter, when its value is empty) to be rendered.
+// Pass "" for either filter to disable that dimension of filtering.
+func ProcessFile(filename string, format string, outputDir string, riskFilter string, statusFilter string) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
@@ -58,7 +62,11 @@ func ProcessFile(filename string, format string, outputDir string, riskFilter st
 		plans = append(plans, plan)
 	}
 
-	filteredPlans := common.FilterPlansByRisk(plans, riskFilter)
+	// Apply status filter first, then risk filter. Each filter is a no-op
+	// when its argument is empty, so passing neither, one, or both filters
+	// produces the expected intersection.
+	filteredPlans := common.FilterPlansByStatus(plans, statusFilter)
+	filteredPlans = common.FilterPlansByRisk(filteredPlans, riskFilter)
 
 	var totalDocs int
 	for i, plan := range filteredPlans {

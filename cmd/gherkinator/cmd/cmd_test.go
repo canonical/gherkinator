@@ -19,13 +19,12 @@ func resetFlags() {
 	outputDir = "."
 	format = "gh"
 	riskFilter = ""
+	statusFilter = ""
 	serveName = ""
-	serveRisk = ""
 	skipConfirm = false
 	deleteInputFile = ""
 	cleanDir = "."
 	editInputFile = ""
-	planName = "test-plan.yaml"
 
 	// Reset args and flags changed for the rootCmd itself.
 	rootCmd.SetArgs([]string{})
@@ -673,4 +672,207 @@ func TestEditCommand_FileNotFound(t *testing.T) {
 	rootCmd.SetArgs([]string{"edit", "/nonexistent/file.yaml"})
 	err := rootCmd.Execute()
 	assert.Error(t, err)
+}
+
+func TestGenerateCommand_StatusFilter(t *testing.T) {
+	resetFlags()
+	tmpDir := t.TempDir()
+	yamlContent := `feature: "Planned Feature"
+type: "functional"
+status: "planned"
+risk: "stable"
+scenarios:
+  - "Planned scenario"
+---
+feature: "Implemented Feature"
+type: "security"
+status: "implemented"
+risk: "stable"
+scenarios:
+  - "Implemented scenario"
+---
+feature: "Deprecated Feature"
+type: "solution"
+status: "deprecated"
+risk: "stable"
+scenarios:
+  - "Deprecated scenario"
+`
+	inputFile := filepath.Join(tmpDir, "test-plan.yaml")
+	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
+
+	outputDir := filepath.Join(tmpDir, "output")
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir, "--status", "planned", inputFile})
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	assert.FileExists(t, filepath.Join(outputDir, "planned_feature.md"))
+	assert.NoFileExists(t, filepath.Join(outputDir, "implemented_feature.md"))
+	assert.NoFileExists(t, filepath.Join(outputDir, "deprecated_feature.md"))
+}
+
+func TestGenerateCommand_StatusFilter_Implemented(t *testing.T) {
+	resetFlags()
+	tmpDir := t.TempDir()
+	yamlContent := `feature: "Planned Feature"
+type: "functional"
+status: "planned"
+risk: "stable"
+scenarios:
+  - "Planned scenario"
+---
+feature: "Implemented Feature"
+type: "security"
+status: "implemented"
+risk: "stable"
+scenarios:
+  - "Implemented scenario"
+---
+feature: "Deprecated Feature"
+type: "solution"
+status: "deprecated"
+risk: "stable"
+scenarios:
+  - "Deprecated scenario"
+`
+	inputFile := filepath.Join(tmpDir, "test-plan.yaml")
+	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
+
+	outputDir := filepath.Join(tmpDir, "output")
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir, "--status", "implemented", inputFile})
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	assert.NoFileExists(t, filepath.Join(outputDir, "planned_feature.md"))
+	assert.FileExists(t, filepath.Join(outputDir, "implemented_feature.md"))
+	assert.NoFileExists(t, filepath.Join(outputDir, "deprecated_feature.md"))
+}
+
+func TestGenerateCommand_InvalidStatusFlag(t *testing.T) {
+	resetFlags()
+	tmpDir := t.TempDir()
+	yamlContent := `feature: "Test"
+type: "functional"
+status: "planned"
+risk: "stable"
+scenarios:
+  - "test"
+`
+	inputFile := filepath.Join(tmpDir, "test-plan.yaml")
+	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
+
+	outputDir := filepath.Join(tmpDir, "output")
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir, "--status", "invalid", inputFile})
+	err := rootCmd.Execute()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "--status must be one of")
+}
+
+func TestGenerateCommand_StatusAndRisk_Intersection(t *testing.T) {
+	// --status=implemented --risk=candidate: only "implemented" plans whose
+	// risk is edge, beta, or candidate.
+	resetFlags()
+	tmpDir := t.TempDir()
+	yamlContent := `feature: "Implemented Edge"
+type: "functional"
+status: "implemented"
+risk: "edge"
+scenarios:
+  - "Edge scenario"
+---
+feature: "Implemented Candidate"
+type: "security"
+status: "implemented"
+risk: "candidate"
+scenarios:
+  - "Candidate scenario"
+---
+feature: "Implemented Stable"
+type: "solution"
+status: "implemented"
+risk: "stable"
+scenarios:
+  - "Stable scenario"
+---
+feature: "Planned Beta"
+type: "functional"
+status: "planned"
+risk: "beta"
+scenarios:
+  - "Planned scenario"
+`
+	inputFile := filepath.Join(tmpDir, "test-plan.yaml")
+	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
+
+	outputDir := filepath.Join(tmpDir, "output")
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir,
+		"--status", "implemented", "--risk", "candidate", inputFile})
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	assert.FileExists(t, filepath.Join(outputDir, "implemented_edge.md"))
+	assert.FileExists(t, filepath.Join(outputDir, "implemented_candidate.md"))
+	assert.NoFileExists(t, filepath.Join(outputDir, "implemented_stable.md"))
+	assert.NoFileExists(t, filepath.Join(outputDir, "planned_beta.md"))
+}
+
+func TestGenerateCommand_StatusAndStable_Intersection(t *testing.T) {
+	// --risk=stable matches every risk level, so the intersection with
+	// --status=implemented should yield only implemented plans.
+	resetFlags()
+	tmpDir := t.TempDir()
+	yamlContent := `feature: "Implemented Edge"
+type: "functional"
+status: "implemented"
+risk: "edge"
+scenarios:
+  - "Edge scenario"
+---
+feature: "Implemented Stable"
+type: "security"
+status: "implemented"
+risk: "stable"
+scenarios:
+  - "Stable scenario"
+---
+feature: "Planned Stable"
+type: "solution"
+status: "planned"
+risk: "stable"
+scenarios:
+  - "Planned scenario"
+`
+	inputFile := filepath.Join(tmpDir, "test-plan.yaml")
+	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
+
+	outputDir := filepath.Join(tmpDir, "output")
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir,
+		"--status", "implemented", "--risk", "stable", inputFile})
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	assert.FileExists(t, filepath.Join(outputDir, "implemented_edge.md"))
+	assert.FileExists(t, filepath.Join(outputDir, "implemented_stable.md"))
+	assert.NoFileExists(t, filepath.Join(outputDir, "planned_stable.md"))
+}
+
+func TestServeCommand_InvalidStatusFlag(t *testing.T) {
+	resetFlags()
+	tmpDir := t.TempDir()
+	yamlContent := `feature: "Test"
+type: "functional"
+status: "planned"
+risk: "stable"
+scenarios:
+  - "test"
+`
+	inputFile := filepath.Join(tmpDir, "test-plan.yaml")
+	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
+
+	// --status validation happens before any disk I/O, so the YAML file
+	// can be missing or invalid; we just need serve to refuse the flag.
+	rootCmd.SetArgs([]string{"serve", "--status", "bogus", inputFile})
+	err := rootCmd.Execute()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "--status must be one of")
 }

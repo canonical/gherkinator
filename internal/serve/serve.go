@@ -26,10 +26,14 @@ var validTestTypes = []string{
 }
 
 // GenerateSphinxDocs reads a YAML test plan file and generates Markdown
-// files organised by test type inside the docs directory.  Each plan is
+// files organized by test type inside the docs directory.  Each plan is
 // written to <docsDir>/<type>/<safe_feature_name>.md.  It returns the
 // list of generated plans so callers can build a toctree.
-func GenerateSphinxDocs(yamlFile string, docsDir string, riskFilter string) ([]common.TestPlan, error) {
+//
+// riskFilter and statusFilter are intersected: a plan must satisfy both
+// filters (or either filter, when its value is empty) to be rendered.
+// Pass "" for either filter to disable that dimension of filtering.
+func GenerateSphinxDocs(yamlFile string, docsDir string, riskFilter string, statusFilter string) ([]common.TestPlan, error) {
 	file, err := os.Open(yamlFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
@@ -56,7 +60,11 @@ func GenerateSphinxDocs(yamlFile string, docsDir string, riskFilter string) ([]c
 		plans = append(plans, plan)
 	}
 
-	filteredPlans := common.FilterPlansByRisk(plans, riskFilter)
+	// Apply status filter first, then risk filter. Each filter is a no-op
+	// when its argument is empty, so passing neither, one, or both filters
+	// produces the expected intersection.
+	filteredPlans := common.FilterPlansByStatus(plans, statusFilter)
+	filteredPlans = common.FilterPlansByRisk(filteredPlans, riskFilter)
 
 	for _, plan := range filteredPlans {
 		output := common.GenerateMarkdown(plan)
@@ -244,10 +252,12 @@ func UpdateConfPy(confPath string, projectName string) error {
 // starter pack: generates docs into type subdirectories, builds the
 // toctree index with sub-landing pages per test type, and sets the
 // project name in conf.py.
-func PrepareSphinxSite(yamlFile string, cloneDir string, projectName string, riskFilter string) error {
+//
+// riskFilter and statusFilter are intersected (see GenerateSphinxDocs).
+func PrepareSphinxSite(yamlFile string, cloneDir string, projectName string, riskFilter string, statusFilter string) error {
 	docsDir := filepath.Join(cloneDir, "docs")
 
-	plans, err := GenerateSphinxDocs(yamlFile, docsDir, riskFilter)
+	plans, err := GenerateSphinxDocs(yamlFile, docsDir, riskFilter, statusFilter)
 	if err != nil {
 		return fmt.Errorf("failed to generate sphinx docs: %w", err)
 	}

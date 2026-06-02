@@ -20,7 +20,9 @@ import (
 //
 // projectName controls the title of the rendered Sphinx site; pass "" to
 // use the basename of the current working directory.
-func Run(inputFiles []string, projectName string, riskFilter string) error {
+//
+// riskFilter and statusFilter are intersected (see GenerateSphinxDocs).
+func Run(inputFiles []string, projectName string, riskFilter string, statusFilter string) error {
 	if projectName == "" {
 		cwd, err := os.Getwd()
 		if err != nil {
@@ -52,7 +54,7 @@ func Run(inputFiles []string, projectName string, riskFilter string) error {
 		}
 		var merged []common.TestPlan
 		for _, file := range inputFiles {
-			plans, err := GenerateSphinxDocs(file, docsDir, riskFilter)
+			plans, err := GenerateSphinxDocs(file, docsDir, riskFilter, statusFilter)
 			if err != nil {
 				return fmt.Errorf("failed to generate sphinx docs for %s: %w", file, err)
 			}

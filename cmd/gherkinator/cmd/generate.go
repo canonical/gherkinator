@@ -10,10 +10,16 @@ import (
 	"gherkinator/internal/generate"
 )
 
+// riskFilter and statusFilter are shared package-level variables that
+// the --risk and --status flags of the generate and serve subcommands
+// bind to.  Sharing them ensures that running one subcommand followed by
+// the other in the same process (e.g. during tests) leaves no stale
+// state behind.
 var (
-	outputDir  string
-	format     string
-	riskFilter string
+	outputDir    string
+	format       string
+	riskFilter   string
+	statusFilter string
 )
 
 // generateCmd generates Gherkin (.feature) or Markdown (.md) files from
@@ -29,13 +35,16 @@ var generateCmd = &cobra.Command{
 		if riskFilter != "" && !common.IsValidRisk(riskFilter) {
 			return fmt.Errorf("--risk must be one of 'edge', 'beta', 'candidate', or 'stable'")
 		}
+		if statusFilter != "" && !common.IsValidStatus(statusFilter) {
+			return fmt.Errorf("--status must be one of 'planned', 'implemented', or 'deprecated'")
+		}
 		inputFiles, err := common.DiscoverYAMLFiles(args)
 		if err != nil {
 			return fmt.Errorf("failed to resolve input files: %w", err)
 		}
 		var errs []error
 		for _, file := range inputFiles {
-			if err := generate.ProcessFile(file, format, outputDir, riskFilter); err != nil {
+			if err := generate.ProcessFile(file, format, outputDir, riskFilter, statusFilter); err != nil {
 				errs = append(errs, fmt.Errorf("generation failed for %s: %w", file, err))
 			}
 		}
@@ -51,4 +60,5 @@ func init() {
 	generateCmd.Flags().StringVarP(&outputDir, "output-dir", "o", ".", "Directory to save generated files")
 	generateCmd.Flags().StringVar(&format, "format", "gh", "Output format (gh or md)")
 	generateCmd.Flags().StringVar(&riskFilter, "risk", "", "Filter by risk level (edge, beta, candidate, stable)")
+	generateCmd.Flags().StringVar(&statusFilter, "status", "", "Filter by status (planned, implemented, deprecated)")
 }

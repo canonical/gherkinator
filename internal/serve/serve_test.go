@@ -41,7 +41,7 @@ scenarios:
 	docsDir := filepath.Join(tmpDir, "docs")
 	require.NoError(t, os.MkdirAll(docsDir, 0755))
 
-	plans, err := GenerateSphinxDocs(inputFile, docsDir, "")
+	plans, err := GenerateSphinxDocs(inputFile, docsDir, "", "")
 	require.NoError(t, err)
 	assert.Len(t, plans, 2)
 
@@ -72,14 +72,14 @@ scenarios:
 	docsDir := filepath.Join(tmpDir, "docs")
 	require.NoError(t, os.MkdirAll(docsDir, 0755))
 
-	plans, err := GenerateSphinxDocs(inputFile, docsDir, "")
+	plans, err := GenerateSphinxDocs(inputFile, docsDir, "", "")
 	require.NoError(t, err)
 	assert.Len(t, plans, 1)
 	assert.FileExists(t, filepath.Join(docsDir, "functional", "plan.md"))
 }
 
 func TestGenerateSphinxDocs_FileNotFound(t *testing.T) {
-	_, err := GenerateSphinxDocs("/nonexistent.yaml", "/tmp", "")
+	_, err := GenerateSphinxDocs("/nonexistent.yaml", "/tmp", "", "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to open file")
 }
@@ -96,7 +96,7 @@ scenarios:
 	inputFile := filepath.Join(tmpDir, "test-plan.yaml")
 	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
 
-	_, err := GenerateSphinxDocs(inputFile, tmpDir, "")
+	_, err := GenerateSphinxDocs(inputFile, tmpDir, "", "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "validation error")
 }
@@ -106,7 +106,7 @@ func TestGenerateSphinxDocs_InvalidYAML(t *testing.T) {
 	inputFile := filepath.Join(tmpDir, "bad.yaml")
 	require.NoError(t, os.WriteFile(inputFile, []byte("{{{bad"), 0644))
 
-	_, err := GenerateSphinxDocs(inputFile, tmpDir, "")
+	_, err := GenerateSphinxDocs(inputFile, tmpDir, "", "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode YAML")
 }
@@ -329,7 +329,7 @@ scenarios:
 	setupFakeStarterPack(t, cloneDir)
 	docsDir := filepath.Join(cloneDir, "docs")
 
-	err := PrepareSphinxSite(inputFile, cloneDir, "My Project", "")
+	err := PrepareSphinxSite(inputFile, cloneDir, "My Project", "", "")
 	require.NoError(t, err)
 
 	// conf.py should have the updated project name
@@ -385,7 +385,7 @@ func TestPrepareSphinxSite_InvalidYAML(t *testing.T) {
 	inputFile := filepath.Join(tmpDir, "bad.yaml")
 	require.NoError(t, os.WriteFile(inputFile, []byte("{{{bad"), 0644))
 
-	err := PrepareSphinxSite(inputFile, cloneDir, "test", "")
+	err := PrepareSphinxSite(inputFile, cloneDir, "test", "", "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to generate sphinx docs")
 }
@@ -395,7 +395,7 @@ func TestPrepareSphinxSite_NonexistentYAML(t *testing.T) {
 	cloneDir := filepath.Join(tmpDir, "clone")
 	setupFakeStarterPack(t, cloneDir)
 
-	err := PrepareSphinxSite("/nonexistent.yaml", cloneDir, "test", "")
+	err := PrepareSphinxSite("/nonexistent.yaml", cloneDir, "test", "", "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to generate sphinx docs")
 }
@@ -405,7 +405,7 @@ func TestPrepareSphinxSite_NonexistentDocsDir(t *testing.T) {
 	inputFile := filepath.Join(tmpDir, "test.yaml")
 	require.NoError(t, os.WriteFile(inputFile, []byte(""), 0644))
 
-	err := PrepareSphinxSite(inputFile, filepath.Join(tmpDir, "nonexistent"), "test", "")
+	err := PrepareSphinxSite(inputFile, filepath.Join(tmpDir, "nonexistent"), "test", "", "")
 	assert.Error(t, err)
 }
 
@@ -439,7 +439,7 @@ scenarios:
 	require.NoError(t, os.MkdirAll(docsDir, 0755))
 
 	// Test risk filter beta (should include edge and beta, but not stable)
-	plans, err := GenerateSphinxDocs(inputFile, docsDir, "beta")
+	plans, err := GenerateSphinxDocs(inputFile, docsDir, "beta", "")
 	require.NoError(t, err)
 	assert.Len(t, plans, 2)
 	assert.FileExists(t, filepath.Join(docsDir, "functional", "edge_feature.md"))
@@ -470,7 +470,7 @@ scenarios:
 	require.NoError(t, os.MkdirAll(docsDir, 0755))
 
 	// Test risk filter edge (should only include edge)
-	plans, err := GenerateSphinxDocs(inputFile, docsDir, "edge")
+	plans, err := GenerateSphinxDocs(inputFile, docsDir, "edge", "")
 	require.NoError(t, err)
 	assert.Len(t, plans, 1)
 	assert.FileExists(t, filepath.Join(docsDir, "functional", "edge_feature.md"))
@@ -580,4 +580,128 @@ func TestCleanGeneratedDocs_UnknownTypePreserved(t *testing.T) {
 	require.NoError(t, err)
 	// Directories not in validTestTypes must be preserved
 	assert.DirExists(t, filepath.Join(tmpDir, "unrelated"))
+}
+
+func TestGenerateSphinxDocs_StatusFilter(t *testing.T) {
+	tmpDir := t.TempDir()
+	yamlContent := `feature: "Planned Feature"
+type: "functional"
+status: "planned"
+risk: "stable"
+scenarios:
+  - "Planned scenario"
+---
+feature: "Implemented Feature"
+type: "security"
+status: "implemented"
+risk: "stable"
+scenarios:
+  - "Implemented scenario"
+---
+feature: "Deprecated Feature"
+type: "solution"
+status: "deprecated"
+risk: "stable"
+scenarios:
+  - "Deprecated scenario"
+`
+	inputFile := filepath.Join(tmpDir, "test-plan.yaml")
+	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
+
+	docsDir := filepath.Join(tmpDir, "docs")
+	require.NoError(t, os.MkdirAll(docsDir, 0755))
+
+	// status=planned: only the planned feature renders
+	plans, err := GenerateSphinxDocs(inputFile, docsDir, "", "planned")
+	require.NoError(t, err)
+	assert.Len(t, plans, 1)
+	assert.FileExists(t, filepath.Join(docsDir, "functional", "planned_feature.md"))
+	assert.NoFileExists(t, filepath.Join(docsDir, "security", "implemented_feature.md"))
+	assert.NoFileExists(t, filepath.Join(docsDir, "solution", "deprecated_feature.md"))
+}
+
+func TestGenerateSphinxDocs_BothFilters_ImplementedAndCandidate(t *testing.T) {
+	// --status=implemented --risk=candidate: only "implemented" plans whose
+	// risk is edge, beta, or candidate.
+	tmpDir := t.TempDir()
+	yamlContent := `feature: "Implemented Edge"
+type: "functional"
+status: "implemented"
+risk: "edge"
+scenarios:
+  - "Edge scenario"
+---
+feature: "Implemented Candidate"
+type: "security"
+status: "implemented"
+risk: "candidate"
+scenarios:
+  - "Candidate scenario"
+---
+feature: "Implemented Stable"
+type: "solution"
+status: "implemented"
+risk: "stable"
+scenarios:
+  - "Stable scenario"
+---
+feature: "Planned Beta"
+type: "functional"
+status: "planned"
+risk: "beta"
+scenarios:
+  - "Planned beta scenario"
+`
+	inputFile := filepath.Join(tmpDir, "test-plan.yaml")
+	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
+
+	docsDir := filepath.Join(tmpDir, "docs")
+	require.NoError(t, os.MkdirAll(docsDir, 0755))
+
+	plans, err := GenerateSphinxDocs(inputFile, docsDir, "candidate", "implemented")
+	require.NoError(t, err)
+	assert.Len(t, plans, 2)
+	assert.FileExists(t, filepath.Join(docsDir, "functional", "implemented_edge.md"))
+	assert.FileExists(t, filepath.Join(docsDir, "security", "implemented_candidate.md"))
+	assert.NoFileExists(t, filepath.Join(docsDir, "solution", "implemented_stable.md"))
+	assert.NoFileExists(t, filepath.Join(docsDir, "functional", "planned_beta.md"))
+}
+
+func TestGenerateSphinxDocs_BothFilters_ImplementedAndStable(t *testing.T) {
+	// --risk=stable matches every risk level, so the intersection with
+	// --status=implemented should yield only implemented plans.
+	tmpDir := t.TempDir()
+	yamlContent := `feature: "Implemented Edge"
+type: "functional"
+status: "implemented"
+risk: "edge"
+scenarios:
+  - "Edge scenario"
+---
+feature: "Implemented Stable"
+type: "security"
+status: "implemented"
+risk: "stable"
+scenarios:
+  - "Stable scenario"
+---
+feature: "Planned Stable"
+type: "solution"
+status: "planned"
+risk: "stable"
+scenarios:
+  - "Planned stable scenario"
+`
+	inputFile := filepath.Join(tmpDir, "test-plan.yaml")
+	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
+
+	docsDir := filepath.Join(tmpDir, "docs")
+	require.NoError(t, os.MkdirAll(docsDir, 0755))
+
+	plans, err := GenerateSphinxDocs(inputFile, docsDir, "stable", "implemented")
+	require.NoError(t, err)
+	assert.Len(t, plans, 2)
+	assert.FileExists(t, filepath.Join(docsDir, "functional", "implemented_edge.md"))
+	assert.FileExists(t, filepath.Join(docsDir, "security", "implemented_stable.md"))
+	assert.NoFileExists(t, filepath.Join(docsDir, "solution", "planned_stable.md"))
 }
