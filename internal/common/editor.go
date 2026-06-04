@@ -31,13 +31,11 @@ func EditHelpTemplate() string {
 ###   - |-
 ###     Submit a job
 ###     Given the system is running
-###     When a job is submitted
+###     When user <user> submits a job
 ###     Then the job completes successfully
 ### examples:
 ###   - - alice
-###     - admin
 ###   - - bob
-###     - viewer
 ###
 ### Multiple plans are separated by '---'.
 ###
