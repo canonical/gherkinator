@@ -31,8 +31,11 @@ if err := doStuff(); err != nil {
 
 ### Doc comments
 
-Every exported (capitalised) name needs a doc comment immediately preceding the
+Every exported (capitalized) name needs a doc comment immediately preceding the
 declaration with no intervening blank lines.
+
+Do __not__ add generic one-off throughout the main codebase. Do add comments in `*_test.go`
+to provide justifications for different assertions or mocks.
 
 ## Build commands
 
@@ -78,7 +81,8 @@ just vet              # Vet all Go source code.
 6. Vet: `just vet` (uses `go vet`). Fix all vetting errors.
 7. Repeat for each new or modified file.
 
-Pipe to the output of `just` to either `head` or `tail` to capture the `stdout` and/or `stderr`.
+Pipe to the output of shell commands to either `head` or `tail` to capture the
+`stdout` and/or `stderr`.
 
 ## Commit conventions
 
@@ -104,8 +108,8 @@ Other rules:
 
 ### Constraints
 
-- Do **not** add new dependencies beyond what is already in `go.mod` without
+- Do __not__ add new dependencies beyond what is already in `go.mod` without
   approval.
-- Do **not** install anything with `apt` or `snap`.
-- Do **not** run commands that require sudo.
+- Do __not__ install anything with `apt` or `snap`.
+- Do __not__ run commands that require sudo.
 - All errors must be handled explicitly in Go code.
