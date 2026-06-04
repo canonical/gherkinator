@@ -197,11 +197,44 @@ func BuildSphinxIndex(docsDir string, plans []common.TestPlan) error {
 	return nil
 }
 
+// sphinxStackTemplateDirs lists the content template directories
+// shipped with the canonical/sphinx-stack repository that gherkinator
+// removes before generating its own documentation.  These are the
+// Diataxis-framework directories that are not relevant to test plans.
+var sphinxStackTemplateDirs = []string{
+	"contribute",
+	"explanation",
+	"how-to",
+	"reference",
+	"release-notes",
+	"tutorials",
+}
+
+// PruneSphinxStackDefaults removes the template content directories
+// and the default index.rst that ship with canonical/sphinx-stack so
+// that gherkinator can replace them with generated test-plan
+// documentation.  The _dev/ and _templates/ directories are kept
+// because they are referenced by the Sphinx build pipeline.
+func PruneSphinxStackDefaults(docsDir string) error {
+	for _, dir := range sphinxStackTemplateDirs {
+		if err := os.RemoveAll(filepath.Join(docsDir, dir)); err != nil {
+			return fmt.Errorf("failed to remove %s: %w", dir, err)
+		}
+	}
+	indexRst := filepath.Join(docsDir, "index.rst")
+	if err := os.Remove(indexRst); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove index.rst: %w", err)
+	}
+	return nil
+}
+
 // UpdateConfPy rewrites the Sphinx conf.py file to:
 //   - set the `project` variable to the given name
 //   - uncomment `disable_feedback_button = True`
 //   - remove rediraffe-related configuration lines
 //   - remove "sphinx_rerediraffe" from the extensions list
+//   - replace the `llms_txt_description` block with a gherkinator-specific
+//     description that names the project
 func UpdateConfPy(confPath string, projectName string) error {
 	data, err := os.ReadFile(confPath)
 	if err != nil {
@@ -211,6 +244,8 @@ func UpdateConfPy(confPath string, projectName string) error {
 	lines := strings.Split(string(data), "\n")
 	var out []string
 	foundProject := false
+	foundLlms := false
+	inLlmsBlock := false
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 
@@ -238,6 +273,19 @@ func UpdateConfPy(confPath string, projectName string) error {
 			continue
 		}
 
+		if !foundLlms && strings.HasPrefix(trimmed, "llms_txt_description") && strings.Contains(trimmed, "textwrap.dedent") {
+			out = append(out, buildLlmsTxtDescription(projectName)...)
+			foundLlms = true
+			inLlmsBlock = true
+			continue
+		}
+		if inLlmsBlock {
+			if trimmed == ")" {
+				inLlmsBlock = false
+			}
+			continue
+		}
+
 		out = append(out, line)
 	}
 
@@ -251,15 +299,32 @@ func UpdateConfPy(confPath string, projectName string) error {
 	return nil
 }
 
+func buildLlmsTxtDescription(projectName string) []string {
+	return []string{
+		`llms_txt_description = textwrap.dedent(`,
+		`    """\`,
+		fmt.Sprintf(`    This documentation contains the Gherkin-based test plans for %s.`, projectName),
+		`    Each page describes the test plan, risk-level that should be tested, and the`,
+		`    status of its implementation.`,
+		`    """`,
+		`)`,
+	}
+}
+
 // PrepareSphinxSite is the high-level orchestrator called by the serve
-// command.  It operates on the docs/ subdirectory of the cloned slim
-// starter pack: generates docs into type subdirectories, builds the
-// toctree index with sub-landing pages per test type, and sets the
-// project name in conf.py.
+// command.  It operates on the docs/ subdirectory of the cloned
+// canonical/sphinx-stack repository: prunes the sphinx-stack template
+// content, generates docs into type subdirectories, builds the toctree
+// index with sub-landing pages per test type, and sets the project
+// name in conf.py.
 //
 // riskFilter and statusFilter are intersected (see GenerateSphinxDocs).
 func PrepareSphinxSite(yamlFile string, cloneDir string, projectName string, riskFilter string, statusFilter string) error {
 	docsDir := filepath.Join(cloneDir, "docs")
+
+	if err := PruneSphinxStackDefaults(docsDir); err != nil {
+		return fmt.Errorf("failed to prune sphinx-stack defaults: %w", err)
+	}
 
 	plans, err := GenerateSphinxDocs(yamlFile, docsDir, riskFilter, statusFilter)
 	if err != nil {
@@ -281,7 +346,7 @@ func PrepareSphinxSite(yamlFile string, cloneDir string, projectName string, ris
 // CleanGeneratedDocs removes the per-test-type subdirectories inside the
 // Sphinx docs directory so that a subsequent regeneration does not leave
 // stale markdown files for features that have been removed.  Files in the
-// docs root (e.g. conf.py, Makefile, index.md) are preserved.
+// docs root (e.g. conf.py, Makefile) are preserved.
 func CleanGeneratedDocs(docsDir string) error {
 	for _, testType := range validTestTypes {
 		typeDir := filepath.Join(docsDir, testType)

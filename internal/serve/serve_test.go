@@ -272,15 +272,31 @@ func TestBuildSphinxIndex_InvalidDir(t *testing.T) {
 	assert.Error(t, err)
 }
 
-// helper to simulate a cloned slim starter pack with a docs/ subdirectory
-func setupFakeStarterPack(t *testing.T, cloneDir string) {
+// helper to simulate a cloned canonical/sphinx-stack repository with a
+// docs/ subdirectory that contains the template content directories and
+// default index.rst that gherkinator prunes before generating docs.
+func setupFakeSphinxStack(t *testing.T, cloneDir string) {
 	t.Helper()
 	docsDir := filepath.Join(cloneDir, "docs")
 	require.NoError(t, os.MkdirAll(docsDir, 0755))
-	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "index.md"), []byte("# Slim documentation starter pack\n"), 0644))
-	confPy := `import datetime
 
-project = "Slim documentation starter pack"
+	// Template content directories that PruneSphinxStackDefaults removes.
+	for _, dir := range sphinxStackTemplateDirs {
+		require.NoError(t, os.MkdirAll(filepath.Join(docsDir, dir), 0755))
+	}
+	// Directories that must be preserved by pruning.
+	require.NoError(t, os.MkdirAll(filepath.Join(docsDir, "_dev"), 0755))
+	require.NoError(t, os.MkdirAll(filepath.Join(docsDir, "_templates"), 0755))
+
+	// Default index.rst that is replaced by gherkinator's generated
+	// index.md.  PruneSphinxStackDefaults removes this file.
+	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "index.rst"), []byte("Project\n=======\n"), 0644))
+
+	confPy := `import datetime
+import os
+import textwrap
+
+project = "Project"
 author = "Canonical Ltd."
 
 extensions = [
@@ -293,6 +309,13 @@ rediraffe_redirects = "redirects.txt"
 rediraffe_dir_only = True
 
 # disable_feedback_button = True
+
+llms_txt_description = textwrap.dedent(
+    """\
+    This is the documentation for the Sphinx Stack, a template repository that helps you
+    set up, build, and publish Sphinx documentation.
+    """
+)
 `
 	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "conf.py"), []byte(confPy), 0644))
 	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "Makefile"), []byte("make"), 0644))
@@ -326,7 +349,7 @@ scenarios:
 	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
 
 	cloneDir := filepath.Join(tmpDir, "clone")
-	setupFakeStarterPack(t, cloneDir)
+	setupFakeSphinxStack(t, cloneDir)
 	docsDir := filepath.Join(cloneDir, "docs")
 
 	err := PrepareSphinxSite(inputFile, cloneDir, "My Project", "", "")
@@ -337,7 +360,7 @@ scenarios:
 	require.NoError(t, err)
 	confStr := string(confContent)
 	assert.Contains(t, confStr, `project = "My Project"`)
-	assert.NotContains(t, confStr, "Slim documentation starter pack")
+	assert.NotContains(t, confStr, `project = "Project"`)
 	// Feedback button should be disabled (uncommented)
 	assert.Contains(t, confStr, "disable_feedback_button = True")
 	assert.NotContains(t, confStr, "# disable_feedback_button = True")
@@ -345,10 +368,27 @@ scenarios:
 	assert.NotContains(t, confStr, "rediraffe_redirects")
 	assert.NotContains(t, confStr, "rediraffe_dir_only")
 	assert.NotContains(t, confStr, "sphinx_rerediraffe")
+	// llms_txt_description should be replaced with the project-specific
+	// gherkinator description and not contain the sphinx-stack default.
+	assert.Contains(t, confStr, "Gherkin-based test plans for My Project")
+	assert.NotContains(t, confStr, "Sphinx Stack, a template repository")
 
 	// conf.py and Makefile should remain
 	assert.FileExists(t, filepath.Join(docsDir, "conf.py"))
 	assert.FileExists(t, filepath.Join(docsDir, "Makefile"))
+
+	// sphinx-stack template content directories and default index.rst
+	// should have been pruned before generation.
+	assert.NoDirExists(t, filepath.Join(docsDir, "contribute"))
+	assert.NoDirExists(t, filepath.Join(docsDir, "explanation"))
+	assert.NoDirExists(t, filepath.Join(docsDir, "how-to"))
+	assert.NoDirExists(t, filepath.Join(docsDir, "reference"))
+	assert.NoDirExists(t, filepath.Join(docsDir, "release-notes"))
+	assert.NoDirExists(t, filepath.Join(docsDir, "tutorials"))
+	assert.NoFileExists(t, filepath.Join(docsDir, "index.rst"))
+	// _dev/ and _templates/ must be preserved.
+	assert.DirExists(t, filepath.Join(docsDir, "_dev"))
+	assert.DirExists(t, filepath.Join(docsDir, "_templates"))
 
 	// Generated markdown in type subdirs
 	assert.FileExists(t, filepath.Join(docsDir, "functional", "login_feature.md"))
@@ -380,7 +420,7 @@ scenarios:
 func TestPrepareSphinxSite_InvalidYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 	cloneDir := filepath.Join(tmpDir, "clone")
-	setupFakeStarterPack(t, cloneDir)
+	setupFakeSphinxStack(t, cloneDir)
 
 	inputFile := filepath.Join(tmpDir, "bad.yaml")
 	require.NoError(t, os.WriteFile(inputFile, []byte("{{{bad"), 0644))
@@ -393,7 +433,7 @@ func TestPrepareSphinxSite_InvalidYAML(t *testing.T) {
 func TestPrepareSphinxSite_NonexistentYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 	cloneDir := filepath.Join(tmpDir, "clone")
-	setupFakeStarterPack(t, cloneDir)
+	setupFakeSphinxStack(t, cloneDir)
 
 	err := PrepareSphinxSite("/nonexistent.yaml", cloneDir, "test", "", "")
 	assert.Error(t, err)
@@ -479,7 +519,9 @@ scenarios:
 
 func TestUpdateConfPy_UpdatesProjectName(t *testing.T) {
 	tmpDir := t.TempDir()
-	confPy := `project = "Slim documentation starter pack"
+	confPy := `import textwrap
+
+project = "Project"
 author = "Canonical Ltd."
 # disable_feedback_button = True
 rediraffe_redirects = "redirects.txt"
@@ -489,6 +531,12 @@ extensions = [
     "sphinx_rerediraffe",
     "sphinx_sitemap",
 ]
+llms_txt_description = textwrap.dedent(
+    """\
+    This is the documentation for the Sphinx Stack, a template repository that helps you
+    set up, build, and publish Sphinx documentation.
+    """
+)
 `
 	confPath := filepath.Join(tmpDir, "conf.py")
 	require.NoError(t, os.WriteFile(confPath, []byte(confPy), 0644))
@@ -500,7 +548,7 @@ extensions = [
 	require.NoError(t, err)
 	s := string(content)
 	assert.Contains(t, s, `project = "charmed-hpc"`)
-	assert.NotContains(t, s, "Slim documentation starter pack")
+	assert.NotContains(t, s, `project = "Project"`)
 	assert.Contains(t, s, `author = "Canonical Ltd."`)
 	// Feedback button should be uncommented
 	assert.Contains(t, s, "disable_feedback_button = True")
@@ -509,6 +557,9 @@ extensions = [
 	assert.NotContains(t, s, "rediraffe_redirects")
 	assert.NotContains(t, s, "rediraffe_dir_only")
 	assert.NotContains(t, s, "sphinx_rerediraffe")
+	// llms_txt_description should be replaced with the project-specific text
+	assert.Contains(t, s, "Gherkin-based test plans for charmed-hpc")
+	assert.NotContains(t, s, "Sphinx Stack, a template repository")
 	// Other extensions should remain
 	assert.Contains(t, s, "canonical_sphinx")
 	assert.Contains(t, s, "sphinx_sitemap")
@@ -543,6 +594,61 @@ func TestUpdateConfPy_SpecialCharsInName(t *testing.T) {
 	require.NoError(t, err)
 	// Go's %q properly escapes quotes
 	assert.Contains(t, string(content), `project = "My \"Special\" Project"`)
+}
+
+func TestPruneSphinxStackDefaults_RemovesTemplateDirs(t *testing.T) {
+	tmpDir := t.TempDir()
+	docsDir := filepath.Join(tmpDir, "docs")
+	require.NoError(t, os.MkdirAll(docsDir, 0755))
+
+	// Populate every directory the function is expected to remove.
+	for _, dir := range sphinxStackTemplateDirs {
+		require.NoError(t, os.MkdirAll(filepath.Join(docsDir, dir), 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(docsDir, dir, "page.md"), []byte("x"), 0644))
+	}
+	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "index.rst"), []byte("Project\n=======\n"), 0644))
+
+	// Populate the directories that must be preserved.
+	require.NoError(t, os.MkdirAll(filepath.Join(docsDir, "_dev"), 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "_dev", "keep.txt"), []byte("keep"), 0644))
+	require.NoError(t, os.MkdirAll(filepath.Join(docsDir, "_templates"), 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "_templates", "keep.html"), []byte("keep"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "conf.py"), []byte("p"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "Makefile"), []byte("m"), 0644))
+
+	require.NoError(t, PruneSphinxStackDefaults(docsDir))
+
+	// Template content directories and the default index.rst are gone.
+	for _, dir := range sphinxStackTemplateDirs {
+		assert.NoDirExists(t, filepath.Join(docsDir, dir), "expected %s to be removed", dir)
+	}
+	assert.NoFileExists(t, filepath.Join(docsDir, "index.rst"))
+
+	// _dev/, _templates/, conf.py, and Makefile are preserved.
+	assert.DirExists(t, filepath.Join(docsDir, "_dev"))
+	assert.FileExists(t, filepath.Join(docsDir, "_dev", "keep.txt"))
+	assert.DirExists(t, filepath.Join(docsDir, "_templates"))
+	assert.FileExists(t, filepath.Join(docsDir, "_templates", "keep.html"))
+	assert.FileExists(t, filepath.Join(docsDir, "conf.py"))
+	assert.FileExists(t, filepath.Join(docsDir, "Makefile"))
+}
+
+func TestPruneSphinxStackDefaults_Idempotent(t *testing.T) {
+	tmpDir := t.TempDir()
+	docsDir := filepath.Join(tmpDir, "docs")
+	require.NoError(t, os.MkdirAll(docsDir, 0755))
+	// A fresh clone with no template content; the function must not
+	// error when there is nothing to remove.
+	require.NoError(t, PruneSphinxStackDefaults(docsDir))
+	require.NoError(t, PruneSphinxStackDefaults(docsDir))
+}
+
+func TestPruneSphinxStackDefaults_DocsDirDoesNotExist(t *testing.T) {
+	tmpDir := t.TempDir()
+	docsDir := filepath.Join(tmpDir, "does-not-exist")
+	// Pruning against a missing docs directory should not error: each
+	// RemoveAll on a missing path is a no-op and index.rst is absent.
+	require.NoError(t, PruneSphinxStackDefaults(docsDir))
 }
 
 func TestCleanGeneratedDocs_RemovesTypeDirs(t *testing.T) {

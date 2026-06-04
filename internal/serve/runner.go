@@ -14,7 +14,7 @@ import (
 )
 
 // Run is the high-level orchestrator for the serve command. It clones the
-// slim Sphinx starter pack, generates initial documentation from the
+// Canonical Sphinx stack, generates initial documentation from the
 // provided input files, sets up an fsnotify watcher for live reload, and
 // launches `make run` inside a Bubbletea TUI.
 //
@@ -36,19 +36,24 @@ func Run(inputFiles []string, projectName string, riskFilter string, statusFilte
 		return fmt.Errorf("failed to remove existing serve directory: %w", err)
 	}
 
-	// Clone slim Sphinx starter pack
+	// Clone Canonical Sphinx stack
 	gitCmd := exec.Command(viper.GetString("tools.git"), "clone",
-		"https://github.com/canonical/slim-sphinx-docs-starter-pack.git", tmpDir)
+		"https://github.com/canonical/sphinx-stack.git", tmpDir)
 	gitCmd.Stdout = os.Stdout
 	gitCmd.Stderr = os.Stderr
 	if err := gitCmd.Run(); err != nil {
-		return fmt.Errorf("failed to clone sphinx starter pack: %w", err)
+		return fmt.Errorf("failed to clone sphinx-stack: %w", err)
+	}
+
+	// Prune sphinx-stack template content and default index.rst
+	docsDir := filepath.Join(tmpDir, "docs")
+	if err := PruneSphinxStackDefaults(docsDir); err != nil {
+		return fmt.Errorf("failed to prune sphinx-stack defaults: %w", err)
 	}
 
 	// regenerateDocs clears generated type subdirs, regenerates docs from
 	// every discovered input file, and rebuilds the Sphinx index.
 	regenerateDocs := func() error {
-		docsDir := filepath.Join(tmpDir, "docs")
 		if err := CleanGeneratedDocs(docsDir); err != nil {
 			return fmt.Errorf("failed to clean generated docs: %w", err)
 		}
@@ -73,8 +78,6 @@ func Run(inputFiles []string, projectName string, riskFilter string, statusFilte
 	if err := regenerateDocs(); err != nil {
 		return fmt.Errorf("failed to prepare sphinx site: %w", err)
 	}
-
-	docsDir := filepath.Join(tmpDir, "docs")
 
 	// fsnotify Watcher for Live Reloading
 	watcher, err := fsnotify.NewWatcher()

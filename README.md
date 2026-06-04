@@ -220,15 +220,20 @@ The command follows this pipeline:
 1. Derives the project name from `--name`, or falls back to the base
    name of the current working directory.
 2. Clones the
-   [Canonical Slim Sphinx docs starter pack](https://github.com/canonical/slim-sphinx-docs-starter-pack)
+   [Canonical Sphinx stack](https://github.com/canonical/sphinx-stack)
    into `.gherkindocs/`.
-3. Generates Markdown files into type-based subdirectories inside
+3. Prunes the sphinx-stack template content directories
+   (`contribute/`, `explanation/`, `how-to/`, `reference/`,
+   `release-notes/`, `tutorials/`) and the default `index.rst` so they
+   don't appear in the generated site.
+4. Generates Markdown files into type-based subdirectories inside
    `.gherkindocs/docs/`.
-4. Builds a root `index.md` with level-2 headers per test type and
+5. Builds a root `index.md` with level-2 headers per test type and
    bullet-pointed feature links; patches `conf.py` to set the project name,
-   disable the feedback button, and remove `rediraffe` configuration that
-   causes build errors.
-5. Runs `make run` inside a Bubbletea TUI that streams build/server logs.
+   disable the feedback button, replace the `llms_txt_description` with a
+   gherkinator-specific description, and remove `rediraffe` configuration
+   that causes build errors.
+6. Runs `make run` inside a Bubbletea TUI that streams build/server logs.
    Press **Ctrl+C** to stop the server cleanly.
 
 All input YAML files are watched for changes; the docs rebuild
