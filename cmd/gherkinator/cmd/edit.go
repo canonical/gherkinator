@@ -9,8 +9,6 @@ import (
 	"gherkinator/internal/common"
 )
 
-var editInputFile string
-
 // editCmd opens the user's text editor pre-populated with a YAML test plan
 // file's contents (and a schema reference comment block).  On save, the
 // edited buffer is parsed and validated; valid content is written back to
@@ -21,11 +19,6 @@ var editCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filename := args[0]
-		if editInputFile != "" && editInputFile != filename {
-			return fmt.Errorf("--input/-i must match the file being edited")
-		}
-		editInputFile = filename
-
 		original, err := os.ReadFile(filename)
 		if err != nil {
 			return fmt.Errorf("failed to read %s: %w", filename, err)
@@ -46,8 +39,4 @@ var editCmd = &cobra.Command{
 		fmt.Printf("Successfully updated '%s'\n", filename)
 		return nil
 	},
-}
-
-func init() {
-	editCmd.Flags().StringVarP(&editInputFile, "input", "i", "", "Path to the test plan YAML file (defaults to the positional argument)")
 }

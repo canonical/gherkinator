@@ -24,7 +24,6 @@ func resetFlags() {
 	skipConfirm = false
 	deleteInputFile = ""
 	cleanDir = "."
-	editInputFile = ""
 
 	// Reset args and flags changed for the rootCmd itself.
 	rootCmd.SetArgs([]string{})
