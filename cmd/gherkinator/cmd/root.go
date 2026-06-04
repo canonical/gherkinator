@@ -21,7 +21,7 @@ func init() {
 	// Initialise Viper (defaults, config file lookup, env overrides) before
 	// any subcommand runs.
 	cobra.OnInitialize(common.InitConfig)
-	rootCmd.AddCommand(initCmd, generateCmd, serveCmd, deleteCmd, cleanCmd, editCmd)
+	rootCmd.AddCommand(initCmd, generateCmd, serveCmd, deleteCmd, cleanCmd, editCmd, validateCmd)
 }
 
 // Execute runs the gherkinator root command. It is called by main() and

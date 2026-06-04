@@ -11,6 +11,8 @@ source of truth you can:
 
 - **Generate** Gherkin `.feature` files ready for BDD frameworks.
 - **Generate** Markdown documentation with bolded step keywords.
+- **Validate** YAML test plan files against the schema before generating
+  or serving them.
 - **Serve** a live Sphinx documentation site that rebuilds whenever the YAML
   changes.
 
@@ -195,6 +197,54 @@ gherkinator generate --format gh -o out
 
 Output filenames are derived from the `feature` field
 (`"GPU job submission"` → `gpu_job_submission.feature` / `.md`).
+
+---
+
+### `validate`
+
+Validate one or more test plan YAML files against the schema described
+above.  Each document in a multi-document file is checked individually,
+and all failures are reported together.
+
+```
+gherkinator validate [files-or-directories...] [flags]
+```
+
+The command takes no flags.  Positional arguments follow the same rules
+as `generate` and `serve`: any mix of YAML files (`.yaml`/`.yml`) and
+directories; directories are scanned non-recursively for YAML files.
+When no arguments are supplied, the current working directory is
+scanned.
+
+On success, the total number of test plans validated is printed:
+
+```
+All N test plan(s) are valid.
+```
+
+On failure, each invalid document is reported on its own line, naming
+the source file, the document index, and the reason:
+
+```
+test plan 'charmed-hpc/test-plan.yaml' failed validation (document 1): invalid type 'bogus': must be one of 'functional', 'solution', 'performance', 'reliability', or 'security'
+test plan 'charmed-hpc/test-plan.yaml' failed validation (document 3): invalid risk 'unknown': must be one of 'edge', 'beta', 'candidate', or 'stable'
+```
+
+**Examples:**
+
+```bash
+# Validate a single test plan file
+gherkinator validate charmed-hpc/test-plan.yaml
+
+# Validate every YAML file in a directory
+gherkinator validate charmed-hpc/plans/
+
+# Validate an explicit list of files
+gherkinator validate plans/alpha.yaml plans/beta.yml
+
+# Validate every YAML file in the current working directory
+gherkinator validate
+```
 
 ---
 
