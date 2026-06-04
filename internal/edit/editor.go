@@ -1,9 +1,10 @@
-package common
+package edit
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
+	"gherkinator/internal/common"
 	"io"
 	"os"
 	"os/exec"
@@ -97,17 +98,17 @@ func TextEditor(content []byte) ([]byte, error) {
 // ValidateEditContent validates the YAML content as test plans and writes
 // it to the file if valid.
 func ValidateEditContent(filename string, content []byte) error {
-	var plans []TestPlan
+	var plans []common.TestPlan
 	decoder := yaml.NewDecoder(bytes.NewReader(content))
 	for {
-		var plan TestPlan
+		var plan common.TestPlan
 		if err := decoder.Decode(&plan); err != nil {
 			if err == io.EOF {
 				break
 			}
 			return fmt.Errorf("YAML parse error: %w", err)
 		}
-		if err := ValidateSchema(plan); err != nil {
+		if err := common.ValidateSchema(plan); err != nil {
 			return err
 		}
 		plans = append(plans, plan)
@@ -117,5 +118,5 @@ func ValidateEditContent(filename string, content []byte) error {
 		return fmt.Errorf("no valid test plans found in input")
 	}
 
-	return WriteTestPlans(filename, plans)
+	return common.WriteTestPlans(filename, plans)
 }

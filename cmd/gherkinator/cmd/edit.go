@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"gherkinator/internal/common"
+	"gherkinator/internal/edit"
 )
 
 // editCmd opens the user's text editor pre-populated with a YAML test plan
@@ -26,14 +26,14 @@ var editCmd = &cobra.Command{
 
 		// Prepend the schema help template so the user can see the
 		// valid values for each field while editing.
-		buffer := append([]byte(common.EditHelpTemplate()), original...)
+		buffer := append([]byte(edit.EditHelpTemplate()), original...)
 
-		edited, err := common.TextEditor(buffer)
+		edited, err := edit.TextEditor(buffer)
 		if err != nil {
 			return err
 		}
 
-		if err := common.ValidateEditContent(filename, edited); err != nil {
+		if err := edit.ValidateEditContent(filename, edited); err != nil {
 			return err
 		}
 		fmt.Printf("Successfully updated '%s'\n", filename)

@@ -1,6 +1,7 @@
-package common
+package edit
 
 import (
+	"gherkinator/internal/common"
 	"os"
 	"testing"
 
@@ -95,7 +96,7 @@ scenarios:
 	err := ValidateEditContent(filename, []byte(yamlContent))
 	require.NoError(t, err)
 
-	loaded, err := LoadTestPlans(filename)
+	loaded, err := common.LoadTestPlans(filename)
 	require.NoError(t, err)
 	assert.Len(t, loaded, 1)
 	assert.Equal(t, "Test Feature", loaded[0].Feature)
@@ -147,7 +148,7 @@ scenarios:
 	err := ValidateEditContent(filename, []byte(yamlContent))
 	require.NoError(t, err)
 
-	loaded, err := LoadTestPlans(filename)
+	loaded, err := common.LoadTestPlans(filename)
 	require.NoError(t, err)
 	assert.Len(t, loaded, 1)
 }
@@ -173,7 +174,7 @@ scenarios:
 	err := ValidateEditContent(filename, []byte(yamlContent))
 	require.NoError(t, err)
 
-	loaded, err := LoadTestPlans(filename)
+	loaded, err := common.LoadTestPlans(filename)
 	require.NoError(t, err)
 	assert.Len(t, loaded, 2)
 	assert.Equal(t, "Feature 1", loaded[0].Feature)
