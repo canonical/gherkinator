@@ -1,7 +1,7 @@
 ## Overview
 
 This project follows the [standard Go project layout](https://github.com/golang-standards/project-layout).
-`snap/snapcraft.yaml` is the snap package definition. `justfile` is the task runner.
+`build/snap/snapcraft.yaml` is the snap package definition. `justfile` is the task runner.
 
 ## Code style
 
