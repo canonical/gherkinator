@@ -1,14 +1,20 @@
 name: gherkinator
-base: core24
 version: 0.1.0
+title: Gherkinator
 summary: A testing plan management and generation tool
 description: |
   Gherkinator parses, validates, and transpiles centralized YAML test plans
   into Gherkin feature files or Markdown documentation. It also provides an
   interactive local documentation server using the Canonical's Sphinx Stack.
+license: GPL-3.0
+source-code: "https://github.com/canonical/gherkinator"
+issues: "https://github.com/canonical/gherkinator/issues"
+contact: "hpc-ubuntu-group@canonical.com"
 
-grade: stable
+base: core24
 confinement: classic
+compression: lzo
+grade: stable
 
 apps:
   gherkinator:
