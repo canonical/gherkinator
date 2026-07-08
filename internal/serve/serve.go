@@ -14,7 +14,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"gherkinator/internal/common"
+	"github.com/canonical/gherkinator/internal/common"
 )
 
 // validTestTypes is the list of recognised test types used to create

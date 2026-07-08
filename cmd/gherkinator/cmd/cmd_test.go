@@ -5,10 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/canonical/gherkinator/internal/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"gherkinator/internal/common"
 )
 
 // resetFlags restores the package-level cobra flag variables to their

@@ -10,7 +10,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 
-	"gherkinator/internal/common"
+	"github.com/canonical/gherkinator/internal/common"
 )
 
 // Run is the high-level orchestrator for the serve command. It clones the

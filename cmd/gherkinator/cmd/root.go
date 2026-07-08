@@ -3,9 +3,9 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
+	"github.com/canonical/gherkinator/internal/common"
 
-	"gherkinator/internal/common"
+	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{

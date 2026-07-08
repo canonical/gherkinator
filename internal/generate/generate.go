@@ -14,7 +14,7 @@ import (
 	messages "github.com/cucumber/messages/go/v24"
 	"go.yaml.in/yaml/v3"
 
-	"gherkinator/internal/common"
+	"github.com/canonical/gherkinator/internal/common"
 )
 
 // ValidateGherkin parses a Gherkin string with the official Cucumber parser

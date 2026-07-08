@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"gherkinator/internal/common"
+	"github.com/canonical/gherkinator/internal/common"
 	"io"
 	"os"
 	"os/exec"

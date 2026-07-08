@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"gherkinator/internal/common"
-	"gherkinator/internal/generate"
+	"github.com/canonical/gherkinator/internal/common"
+	"github.com/canonical/gherkinator/internal/generate"
 )
 
 // riskFilter and statusFilter are shared package-level variables that

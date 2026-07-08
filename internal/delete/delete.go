@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"gherkinator/internal/common"
+	"github.com/canonical/gherkinator/internal/common"
 )
 
 // DeleteTestPlans removes test plans whose feature names match the provided

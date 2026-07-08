@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"gherkinator/internal/common"
+	"github.com/canonical/gherkinator/internal/common"
 )
 
 // planName is the name of the YAML file created by the init command.

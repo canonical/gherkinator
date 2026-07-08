@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"gherkinator/internal/common"
-	"gherkinator/internal/delete"
+	"github.com/canonical/gherkinator/internal/common"
+	"github.com/canonical/gherkinator/internal/delete"
 )
 
 var (

@@ -1,4 +1,4 @@
-module gherkinator
+module github.com/canonical/gherkinator
 
 go 1.26
 

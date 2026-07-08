@@ -10,7 +10,7 @@ Follow the [Go Style Guide](https://google.github.io/styleguide/go/guide), plus:
 ### Imports
 
 Three groups, alphabetized (`go fmt` handles ordering): standard library,
-third-party, gherkinator.
+third-party, github.com/canonical/gherkinator.
 
 ### Avoid one-line assign/test
 

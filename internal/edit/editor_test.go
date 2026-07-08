@@ -1,7 +1,7 @@
 package edit
 
 import (
-	"gherkinator/internal/common"
+	"github.com/canonical/gherkinator/internal/common"
 	"os"
 	"testing"
 

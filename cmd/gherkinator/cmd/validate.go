@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"gherkinator/internal/common"
+	"github.com/canonical/gherkinator/internal/common"
 )
 
 var validateCmd = &cobra.Command{

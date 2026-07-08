@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"gherkinator/internal/common"
-	"gherkinator/internal/serve"
+	"github.com/canonical/gherkinator/internal/common"
+	"github.com/canonical/gherkinator/internal/serve"
 )
 
 var serveName string

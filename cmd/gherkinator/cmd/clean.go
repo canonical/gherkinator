@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"gherkinator/internal/clean"
+	"github.com/canonical/gherkinator/internal/clean"
 )
 
 var cleanDir string

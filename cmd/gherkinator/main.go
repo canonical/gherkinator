@@ -2,7 +2,7 @@
 // all command logic to the cmd sub-package.
 package main
 
-import "gherkinator/cmd/gherkinator/cmd"
+import "github.com/canonical/gherkinator/cmd/gherkinator/cmd"
 
 func main() {
 	cmd.Execute()

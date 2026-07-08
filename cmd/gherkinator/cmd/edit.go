@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"gherkinator/internal/edit"
+	"github.com/canonical/gherkinator/internal/edit"
 )
 
 // editCmd opens the user's text editor pre-populated with a YAML test plan
