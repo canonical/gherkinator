@@ -30,8 +30,7 @@ setup:
 # Clean project directory
 clean:
     @echo "Cleaning up workspace..."
-    rm -rf bin/ coverage.out
-    rm -rf .gherkindocs
+    rm -rf .gherkindocs _build/ coverage.out
     @echo "Cleaning snapcraft cache and artifacts..."
     rm -rf snap/ *.snap
 
