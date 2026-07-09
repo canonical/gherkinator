@@ -1,3 +1,4 @@
+#!/usr/bin/env just --justfile
 # Copyright 2026 Canonical Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-go := require("go")
+import "build/debian/justfile"
 
 [private]
 default:
@@ -87,6 +88,13 @@ build *args:
     @echo "Building gherkinator..."
     go build -o bin/gherkinator {{args}} ./cmd/gherkinator/
 
+# Build snap package
+build-snap:
+    @echo "Building snap package..."
+    cp -r build/snap ./snap
+    snapcraft pack
+    rm -rf snap/
+
 # Install the binary to the system GOPATH
 install: build
     @echo "Installing gherkinator..."
@@ -96,10 +104,3 @@ install: build
 coverage: unit
     @echo "Generating coverage report..."
     go tool cover -html=coverage.out
-
-# Build the snap package using snapcraft
-snap:
-    @echo "Building snap package..."
-    cp -r build/snap ./snap
-    snapcraft pack
-    rm -rf snap/
