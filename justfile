@@ -86,7 +86,7 @@ vet:
 # Build specified artifacts, or all artifacts if none specified
 build *args:
     @echo "Building gherkinator..."
-    go build -o bin/gherkinator {{args}} ./cmd/gherkinator/
+    go build -o _build/bin/gherkinator {{args}} ./cmd/gherkinator/
 
 # Build snap package
 build-snap:
