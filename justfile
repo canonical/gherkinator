@@ -94,6 +94,6 @@ install: build
 # Clean project directory
 clean:
     @echo "Cleaning up workspace..."
-    rm -rf .gherkindocs _build/ coverage.out
+    rm -rf coverage.out .gherkindocs/ _build/ vendor/
     @echo "Cleaning snapcraft cache and artifacts..."
     rm -rf snap/ *.snap
