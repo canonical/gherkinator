@@ -1,0 +1,19 @@
+Source: gherkinator
+Section: utils
+Priority: optional
+Maintainer: Jason C. Nucciarone <nuccitheboss@ubuntu.com>
+XSBC-Original-Maintainer: Jason C. Nucciarone <nuccitheboss@ubuntu.com>
+Build-Depends: debhelper-compat (= 13),
+               dpkg-build-api (= 1),
+               golang-any,
+               just,
+Standards-Version: 4.6.2
+Homepage: https://github.com/canonical/gherkinator
+Vcs-Browser: https://github.com/canonical/gherkinator
+Vcs-Git: https://github.com/canonical/gherkinator
+XS-Go-Import-Path: github.com/canonical/gherkinator
+
+Package: gherkinator
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: A CLI tool for managing centralised YAML test plans.

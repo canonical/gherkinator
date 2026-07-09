@@ -15,9 +15,9 @@
 
 set positional-arguments
 
-# Build Debian source package
+# Build Debian binary and source packages
 [group("debian")]
-build-deb-src *args:
+build-deb *args:
     #!/usr/bin/env bash
     VERSION=$1
     DISTRO=$2
@@ -25,20 +25,28 @@ build-deb-src *args:
     REPO_ROOT={{ justfile_directory() }}
 
     WORKSPACE=$(mktemp -d)
+    trap 'rm -rf "$WORKSPACE"' EXIT
 
-    git archive --format=tar.gz --prefix="${PKG_NAME}-${VERSION}/" ${VERSION} \
-        -o "${WORKSPACE}/${PKG_NAME}_${VERSION}.orig.tar.gz"
+    # Packages must be vendored since Launchpad does not allow
+    # external network access on builders.
+    go mod vendor
+    git archive --format=tar --prefix=${PKG_NAME}-${VERSION}/ ${VERSION} \
+        -o ${WORKSPACE}/${PKG_NAME}_${VERSION}.orig.tar
+    tar --append -f ${WORKSPACE}/${PKG_NAME}_${VERSION}.orig.tar \
+        --transform="s|^|$PKG_NAME-$VERSION/|" \
+        vendor
 
     cd "${WORKSPACE}"
-    tar -xzf "${PKG_NAME}_${VERSION}.orig.tar.gz"
+    gzip -9 ${PKG_NAME}_${VERSION}.orig.tar
+    tar -xzf ${PKG_NAME}_${VERSION}.orig.tar.gz
     cd "${PKG_NAME}-${VERSION}"
 
-    cp -r "${REPO_ROOT}/build/debian" ./debian
+    cp -r ${REPO_ROOT}/build/debian ./debian
     sbuild -d "${DISTRO}" --source --no-clean-source
 
-    cd "${WORKSPACE}"
-    mkdir -p "${REPO_ROOT}/_build"
-    rm -rf "${PKG_NAME}-${VERSION}" "${PKG_NAME}_${VERSION}.orig.tar.gz"
-    cp -r . "${REPO_ROOT}/_build"
+    cd ${WORKSPACE}
+    mkdir -p ${REPO_ROOT}/_build/debian
+    rm -rf ${PKG_NAME}-${VERSION} ${PKG_NAME}_${VERSION}.orig.tar.gz
+    cp -r . ${REPO_ROOT}/_build/debian
 
 
