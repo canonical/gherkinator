@@ -18,7 +18,7 @@
 go.work
 
 # Build related directories and outputs
-/bin
+/_build
 /snap
 *.snap
 
