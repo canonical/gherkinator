@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import "build/debian/justfile"
+import "build/snap/justfile"
 
 [private]
 default:
