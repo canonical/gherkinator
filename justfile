@@ -27,15 +27,42 @@ help:
 setup:
     go mod tidy
 
-# Clean project directory
-clean:
-    @echo "Cleaning up workspace..."
-    rm -rf .gherkindocs _build/ coverage.out
-    @echo "Cleaning snapcraft cache and artifacts..."
-    rm -rf snap/ *.snap
+# Apply formatting standards
+fmt:
+    @echo "Formatting Go code..."
+    go fmt ./...
+
+# Check against style standards
+lint:
+    @echo "Running linter..."
+    golangci-lint run ./...
+
+# Vet Go source code
+vet:
+    @echo "Running go vet..."
+    go vet ./...
+
+# View HTML coverage report
+coverage: unit
+    @echo "Generating coverage report..."
+    go tool cover -html=coverage.out
 
 # Apply static checks
 check: lint vet
+
+# Build specified artifacts, or all artifacts if none specified
+build *args:
+    @echo "Building gherkinator..."
+    go build -o _build/bin/gherkinator {{args}} ./cmd/gherkinator/
+
+# Run unit tests for specified artifacts, or all artifacts if none specified
+unit *args:
+    @echo "Running unit tests..."
+    go test -v -coverprofile=coverage.out {{args}} ./...
+
+# Run integration tests for specified artifacts, or all artifacts if none specified
+integration *args:
+    @echo "Integration tests not applicable for this project."
 
 # Run tests for specified targets, or all tests if none specified
 test *targets:
@@ -58,48 +85,14 @@ test *targets:
 [private]
 test-all: unit
 
-# Run unit tests for specified artifacts, or all artifacts if none specified
-unit *args:
-    @echo "Running unit tests..."
-    go test -v -coverprofile=coverage.out {{args}} ./...
-
-# Run integration tests for specified artifacts, or all artifacts if none specified
-integration *args:
-    @echo "Integration tests not applicable for this project."
-
-# Apply formatting standards
-fmt:
-    @echo "Formatting Go code..."
-    go fmt ./...
-
-# Check against style standards
-lint:
-    @echo "Running linter..."
-    golangci-lint run ./...
-
-# Vet Go source code
-vet:
-    @echo "Running go vet..."
-    go vet ./...
-
-# Build specified artifacts, or all artifacts if none specified
-build *args:
-    @echo "Building gherkinator..."
-    go build -o _build/bin/gherkinator {{args}} ./cmd/gherkinator/
-
-# Build snap package
-build-snap:
-    @echo "Building snap package..."
-    cp -r build/snap ./snap
-    snapcraft pack
-    rm -rf snap/
-
 # Install the binary to the system GOPATH
 install: build
     @echo "Installing gherkinator..."
     go install ./cmd/gherkinator/
 
-# View HTML coverage report
-coverage: unit
-    @echo "Generating coverage report..."
-    go tool cover -html=coverage.out
+# Clean project directory
+clean:
+    @echo "Cleaning up workspace..."
+    rm -rf .gherkindocs _build/ coverage.out
+    @echo "Cleaning snapcraft cache and artifacts..."
+    rm -rf snap/ *.snap
