@@ -16,6 +16,7 @@
 set positional-arguments
 
 # Build Debian source package
+[group("debian")]
 build-deb-src *args:
     #!/usr/bin/env bash
     VERSION=$1
