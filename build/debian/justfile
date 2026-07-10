@@ -21,7 +21,6 @@ build-deb *args:
     #!/usr/bin/env bash
     VERSION=$1
     DISTRO=$2
-    ARGS=${@:3}
     PKG_NAME="gherkinator"
     REPO_ROOT={{ justfile_directory() }}
 
@@ -43,11 +42,13 @@ build-deb *args:
     cd "${PKG_NAME}-${VERSION}"
 
     cp -r ${REPO_ROOT}/build/debian ./debian
-    sbuild -d ${DISTRO} --no-clean-source $ARGS
+    sudo mk-build-deps --install --remove ./debian/control
+    debuild -S -sa --no-sign  # Build source package,
+    debuild -sa --no-sign  # Build binary package.
 
     cd ${WORKSPACE}
     mkdir -p ${REPO_ROOT}/_build/debian
     rm -rf ${PKG_NAME}-${VERSION}
     cp -r . ${REPO_ROOT}/_build/debian
-
+    sudo apt purge ${PKG_NAME}-build-deps
 

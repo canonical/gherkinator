@@ -8,6 +8,6 @@ actions:
   build-deb: |
     # Ensure necessary build packages are available
     sudo apt update
-    sudo apt install sbuild mmdebstrap
+    sudo apt install ubuntu-dev-tools equivs
 
-    just build-deb "$@" --source-only
+    just build-deb "$@"
