@@ -28,3 +28,6 @@ go.work
 # IDE-specific directories
 .idea
 .vscode/
+
+# Workshop metadata files
+.workshop.lock

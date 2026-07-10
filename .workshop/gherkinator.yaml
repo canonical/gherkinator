@@ -1,0 +1,13 @@
+name: gherkinator
+base: ubuntu@26.04
+sdks:
+  - name: go
+  - name: just
+
+actions:
+  build-deb: |
+    # Ensure necessary build packages are available
+    sudo apt update
+    sudo apt install sbuild mmdebstrap
+
+    just build-deb "$@" --source-only
