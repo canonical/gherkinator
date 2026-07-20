@@ -53,8 +53,10 @@ check: lint vet
 
 # Build specified artifacts, or all artifacts if none specified
 build *args:
-    @echo "Building gherkinator..."
-    go build -o _build/bin/gherkinator {{args}} ./cmd/gherkinator/
+    #!/usr/bin/env bash
+    echo "Building gherkinator..."
+    VERSION="${GHERKINATOR_VERSION:-$(git describe --tags --abbrev=0 2>/dev/null || echo dev)}"
+    go build -ldflags "-X github.com/canonical/gherkinator/internal/version.Version=${VERSION}" -o _build/bin/gherkinator {{args}} ./cmd/gherkinator/
 
 # Run unit tests for specified artifacts, or all artifacts if none specified
 unit *args:
@@ -88,8 +90,10 @@ test-all: unit
 
 # Install the binary to the system GOPATH
 install: build
-    @echo "Installing gherkinator..."
-    go install ./cmd/gherkinator/
+    #!/usr/bin/env bash
+    echo "Installing gherkinator..."
+    VERSION="${GHERKINATOR_VERSION:-$(git describe --tags --abbrev=0 2>/dev/null || echo dev)}"
+    go install -ldflags "-X github.com/canonical/gherkinator/internal/version.Version=${VERSION}" ./cmd/gherkinator/
 
 # Clean project directory
 clean:

@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"github.com/canonical/gherkinator/internal/common"
+	"github.com/canonical/gherkinator/internal/version"
 
 	"github.com/spf13/cobra"
 )
@@ -21,7 +22,19 @@ func init() {
 	// Initialise Viper (defaults, config file lookup, env overrides) before
 	// any subcommand runs.
 	cobra.OnInitialize(common.InitConfig)
-	rootCmd.AddCommand(initCmd, generateCmd, serveCmd, deleteCmd, cleanCmd, editCmd, validateCmd)
+
+	// Wire the version string from the internal/version package into the
+	// root command. We pre-register a boolean `--version` flag with no
+	// `-v` shorthand so cobra's auto-version logic uses our definition
+	// (cobra would otherwise add `-v` as a shorthand, but the issue for
+	// this feature reserves `-v` for a future `--verbose` flag). The
+	// custom template prints the bare version string rather than the
+	// default "{Name} version {Version}" format.
+	rootCmd.Flags().Bool("version", false, "Print version and exit")
+	rootCmd.Version = version.Version
+	rootCmd.SetVersionTemplate("{{.Version}}\n")
+
+	rootCmd.AddCommand(initCmd, generateCmd, serveCmd, deleteCmd, cleanCmd, editCmd, validateCmd, versionCmd)
 }
 
 // Execute runs the gherkinator root command. It is called by main() and

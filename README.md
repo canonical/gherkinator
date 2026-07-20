@@ -360,6 +360,40 @@ gherkinator clean
 gherkinator clean -d charmed-hpc
 ```
 
+---
+
+### `version`
+
+Print the gherkinator version string.
+
+```
+gherkinator version
+```
+
+The same value is reachable via the top-level `--version` flag:
+
+```
+gherkinator --version
+```
+
+Both forms print just the bare version (e.g. `0.1.1`) with no
+surrounding decoration.
+
+> **Note:** The shorthand `-v` is intentionally **not** bound to
+> `--version`. It is reserved for a future `--verbose` flag.
+
+**Examples:**
+
+```bash
+# Print the version via the subcommand
+gherkinator version
+# 0.1.1
+
+# Print the version via the flag
+gherkinator --version
+# 0.1.1
+```
+
 ## Configuration
 
 Tool paths used by the `serve` command can be overridden via a

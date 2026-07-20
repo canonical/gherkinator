@@ -1,5 +1,5 @@
 name: gherkinator
-version: 0.1.0
+version: 0.1.1
 title: Gherkinator
 summary: A testing plan management and generation tool
 description: |
@@ -27,4 +27,5 @@ parts:
     build-snaps:
       - go
     override-build: |
-      go build -o $CRAFT_PART_INSTALL/bin/gherkinator ./cmd/gherkinator/
+      VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo dev)
+      go build -ldflags "-X github.com/canonical/gherkinator/internal/version.Version=${VERSION}" -o $CRAFT_PART_INSTALL/bin/gherkinator ./cmd/gherkinator/
