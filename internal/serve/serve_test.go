@@ -75,7 +75,7 @@ scenarios:
 	plans, err := GenerateSphinxDocs(inputFile, docsDir, "", "")
 	require.NoError(t, err)
 	assert.Len(t, plans, 1)
-	assert.FileExists(t, filepath.Join(docsDir, "functional", "plan.md"))
+	assert.FileExists(t, filepath.Join(docsDir, "functional", "plan_1.md"))
 }
 
 func TestGenerateSphinxDocs_FileNotFound(t *testing.T) {

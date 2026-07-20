@@ -5,12 +5,10 @@ package serve
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"go.yaml.in/yaml/v3"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -39,54 +37,35 @@ var titleCaser = cases.Title(language.English)
 // riskFilter and statusFilter are intersected: a plan must satisfy both
 // filters (or either filter, when its value is empty) to be rendered.
 // Pass "" for either filter to disable that dimension of filtering.
+//
+// Internally this delegates the load/validate/filter/render pipeline to
+// common.RenderPlans and only owns the Sphinx-specific disk layout.
 func GenerateSphinxDocs(yamlFile string, docsDir string, riskFilter string, statusFilter string) ([]common.TestPlan, error) {
-	file, err := os.Open(yamlFile)
+	rendered, err := common.RenderPlans([]string{yamlFile}, "md", riskFilter, statusFilter)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open file: %w", err)
-	}
-	defer func() {
-		_ = file.Close()
-	}()
-
-	var plans []common.TestPlan
-	decoder := yaml.NewDecoder(file)
-	for i := 1; ; i++ {
-		var plan common.TestPlan
-		if err := decoder.Decode(&plan); err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, fmt.Errorf("failed to decode YAML document %d: %w", i, err)
-		}
-
-		if err := common.ValidateSchema(plan); err != nil {
-			return nil, fmt.Errorf("validation error in document %d: %w", i, err)
-		}
-
-		plans = append(plans, plan)
+		return nil, err
 	}
 
-	// Apply status filter first, then risk filter. Each filter is a no-op
-	// when its argument is empty, so passing neither, one, or both filters
-	// produces the expected intersection.
-	filteredPlans := common.FilterPlansByStatus(plans, statusFilter)
+	// Re-load the original plans so we can group by type and return them
+	// to the caller for index generation.
+	rawPlans, err := common.LoadTestPlans(yamlFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to re-load plans for indexing: %w", err)
+	}
+	filteredPlans := common.FilterPlansByStatus(rawPlans, statusFilter)
 	filteredPlans = common.FilterPlansByRisk(filteredPlans, riskFilter)
 
-	for _, plan := range filteredPlans {
-		output := common.GenerateMarkdown(plan)
-
-		safeFilename := strings.ReplaceAll(strings.ToLower(plan.Feature), " ", "_")
-		if safeFilename == "" {
-			safeFilename = "plan"
-		}
+	for i, plan := range filteredPlans {
+		basename := rendered[i].Filename
+		content := rendered[i].Content
 
 		typeDir := filepath.Join(docsDir, plan.Type)
 		if err := os.MkdirAll(typeDir, 0755); err != nil {
 			return nil, fmt.Errorf("failed to create directory %s: %w", typeDir, err)
 		}
 
-		outPath := filepath.Join(typeDir, safeFilename+".md")
-		if err := os.WriteFile(outPath, []byte(output), 0644); err != nil {
+		outPath := filepath.Join(typeDir, basename)
+		if err := os.WriteFile(outPath, []byte(content), 0644); err != nil {
 			return nil, fmt.Errorf("failed to write %s: %w", outPath, err)
 		}
 	}
@@ -141,10 +120,7 @@ func BuildSphinxIndex(docsDir string, plans []common.TestPlan) error {
 	grouped := make(map[string][]string)
 	entries := make(map[string][]planEntry)
 	for _, plan := range plans {
-		safeFilename := strings.ReplaceAll(strings.ToLower(plan.Feature), " ", "_")
-		if safeFilename == "" {
-			safeFilename = "plan"
-		}
+		safeFilename := common.SafeFeatureName(plan, "plan")
 		grouped[plan.Type] = append(grouped[plan.Type], safeFilename)
 		entries[plan.Type] = append(entries[plan.Type], planEntry{
 			Feature:      plan.Feature,

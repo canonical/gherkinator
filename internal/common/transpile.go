@@ -6,6 +6,21 @@ import (
 	"strings"
 )
 
+// SafeFeatureName derives a filesystem-safe basename for a TestPlan's
+// rendered feature file.  Spaces are replaced with underscores and the
+// result is lower-cased; if the resulting name is empty (e.g. when the
+// plan's feature field is blank) the supplied fallback is returned.
+//
+// The fallback is typically a stable per-document name such as "plan_1"
+// or "plan" chosen by the caller.
+func SafeFeatureName(plan TestPlan, fallback string) string {
+	name := strings.ReplaceAll(strings.ToLower(plan.Feature), " ", "_")
+	if name == "" {
+		return fallback
+	}
+	return name
+}
+
 // GenerateGherkin transpiles a TestPlan struct into a valid Gherkin string.
 func GenerateGherkin(plan TestPlan) string {
 	var builder strings.Builder
