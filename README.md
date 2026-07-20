@@ -362,6 +362,70 @@ gherkinator clean -d charmed-hpc
 
 ---
 
+### `diff`
+
+Evaluate whether the YAML test plans in `<plans>` differ from the
+`.feature` files generated under `<features>`.  Useful as a CI check
+to ensure committed feature files match the source-of-truth YAML
+plans.
+
+```
+gherkinator diff [flags] <plans> <features>
+```
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--risk` | _(unset)_ | Restrict the comparison to plans at or below the given risk level (`edge`, `beta`, `candidate`, `stable`) |
+| `--status` | _(unset)_ | Restrict the comparison to plans with the given status (`planned`, `implemented`, `deprecated`) |
+| `--show` | `false` | Print a unified diff to `stdout` for every feature file whose contents differ from the rendered plan |
+
+The `<plans>` argument follows the same rules as `generate`: a YAML
+file, a directory of YAML files, or both.  The `<features>` argument
+must be a directory containing the on-disk `.feature` files to
+compare against.
+
+#### Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | No diffs — plans and feature files are in sync |
+| `1` | At least one classification was reported (missing, differing, or orphan) |
+| `2` | Plan or features-directory error (bad schema, malformed YAML, missing features directory, etc.) |
+
+#### Classification categories
+
+Each non-empty classification is reported on its own line on
+`stderr`:
+
+| Category | Triggered when |
+| --- | --- |
+| **Missing** | A plan has no corresponding `.feature` file under `<features>` |
+| **Differing** | A plan's rendered `.feature` content does not match the file on disk |
+| **Orphan** | A `.feature` file is present under `<features>` but no plan maps to it |
+
+A feature file that maps to a plan but whose content differs is
+classified as **differing** rather than **orphan**.
+
+**Examples:**
+
+```bash
+# Compare every YAML plan in plans/ against the feature files in features/,
+# restricted to plans with status=implemented
+gherkinator diff --status=implemented plans/ features/
+
+# Restrict to plans at or below the "beta" risk level
+gherkinator diff --risk=beta plans/ features/
+
+# Print unified diffs (matching `diff -u` output) for every differing file
+gherkinator diff --status=implemented --show plans/ features/
+```
+
+When `--show` is set, the diff for each differing pair is printed to
+`stdout` between `--- a/<file>` and `+++ b/<file>` headers in the
+same unified-diff format produced by the `diff -u` shell command.
+
+---
+
 ### `version`
 
 Print the gherkinator version string.

@@ -34,7 +34,7 @@ func init() {
 	rootCmd.Version = version.Version
 	rootCmd.SetVersionTemplate("{{.Version}}\n")
 
-	rootCmd.AddCommand(initCmd, generateCmd, serveCmd, deleteCmd, cleanCmd, editCmd, validateCmd, versionCmd)
+	rootCmd.AddCommand(initCmd, generateCmd, serveCmd, deleteCmd, cleanCmd, editCmd, validateCmd, versionCmd, diffCmd)
 }
 
 // Execute runs the gherkinator root command. It is called by main() and

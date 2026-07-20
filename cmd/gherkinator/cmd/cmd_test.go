@@ -23,6 +23,7 @@ func resetFlags() {
 	skipConfirm = false
 	deleteInputFile = ""
 	cleanDir = "."
+	showDiff = false
 
 	// Reset args and flags changed for the rootCmd itself.
 	rootCmd.SetArgs([]string{})
@@ -32,7 +33,7 @@ func TestRootCmd_HasSubcommands(t *testing.T) {
 	assert.NotNil(t, rootCmd)
 	assert.Equal(t, "gherkinator", rootCmd.Use)
 	assert.Equal(t, "A testing plan management and generation tool", rootCmd.Short)
-	assert.Len(t, rootCmd.Commands(), 8)
+	assert.Len(t, rootCmd.Commands(), 9)
 }
 
 func TestInitCommand_CreatesDirectoryAndFile(t *testing.T) {
