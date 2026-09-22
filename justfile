@@ -15,7 +15,8 @@
 
 # Manage Debian ".deb" package builds
 mod debian "build/debian/"
-import "build/snap/justfile"
+# Manage Snap ".snap" package builds
+mod snap "build/snap/"
 
 [private]
 default:

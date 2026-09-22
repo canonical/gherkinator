@@ -13,10 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+[private]
+default:
+    @just snap help
+
 # Build snap package
-[group("snap")]
-build-snap:
+build:
     @echo "Building snap package..."
     cp -r build/snap ./snap
     snapcraft pack
     rm -rf snap/
+
+# Show available recipes in the snap module
+help:
+    @just --list snap --unsorted
