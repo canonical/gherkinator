@@ -63,10 +63,6 @@ unit *args:
     @echo "Running unit tests..."
     go test -v -coverprofile=coverage.out {{args}} ./...
 
-# Run integration tests for specified artifacts, or all artifacts if none specified
-integration *args:
-    @echo "Integration tests not applicable for this project."
-
 # Run tests for specified targets, or all tests if none specified
 test *targets:
     #!/usr/bin/env bash
