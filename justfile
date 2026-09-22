@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import "build/debian/justfile"
+# Manage Debian ".deb" package builds
+mod debian "build/debian/"
 import "build/snap/justfile"
 
 [private]

@@ -15,15 +15,19 @@
 
 set positional-arguments
 
-# Build Debian package
-[group("debian")]
-build-deb *args:
+[private]
+default:
+    @just debian help
+
+# Build Debian binary and source packages
+build *args:
     #!/usr/bin/env bash
     VERSION=$1
     DISTRO=$2
     PKG_NAME="gherkinator"
     REPO_ROOT={{ justfile_directory() }}
 
+    cd ${REPO_ROOT}
     WORKSPACE=$(mktemp -d)
     trap 'rm -rf "$WORKSPACE"' EXIT
 
@@ -52,3 +56,6 @@ build-deb *args:
     cp -r . ${REPO_ROOT}/_build/debian
     sudo apt purge ${PKG_NAME}-build-deps
 
+# Show available recipes in the debian module
+help:
+    @just --list debian --unsorted
