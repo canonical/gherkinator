@@ -19,6 +19,7 @@ func resetFlags() {
 	format = "gh"
 	riskFilter = ""
 	statusFilter = ""
+	tagFilters = nil
 	serveName = ""
 	skipConfirm = false
 	deleteInputFile = ""
@@ -767,6 +768,223 @@ scenarios:
 	assert.Contains(t, err.Error(), "--status must be one of")
 }
 
+func TestGenerateCommand_TagFilter(t *testing.T) {
+	// --tag renders only plans carrying the requested tag; untagged
+	// plans are excluded while the tag filter is active.
+	resetFlags()
+	tmpDir := t.TempDir()
+	inputFile := filepath.Join(tmpDir, "plan.yaml")
+	yamlContent := `feature: "Tagged"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - multi-node
+scenarios:
+  - "Tagged scenario"
+---
+feature: "Untagged"
+type: "security"
+status: "implemented"
+risk: "stable"
+scenarios:
+  - "Untagged scenario"
+`
+	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
+
+	outputDir := filepath.Join(tmpDir, "output")
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir, "--tag", "multi-node", inputFile})
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	assert.FileExists(t, filepath.Join(outputDir, "tagged.md"))
+	assert.NoFileExists(t, filepath.Join(outputDir, "untagged.md"))
+}
+
+func TestGenerateCommand_TagFilterRepeatedFlagsUnion(t *testing.T) {
+	// Repeated --tag flags use union semantics: plans matching any of
+	// the requested tags render.
+	resetFlags()
+	tmpDir := t.TempDir()
+	inputFile := filepath.Join(tmpDir, "plan.yaml")
+	yamlContent := `feature: "Multi Node"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - multi-node
+scenarios:
+  - "Multi node scenario"
+---
+feature: "Minimal"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - minimal
+scenarios:
+  - "Minimal scenario"
+---
+feature: "Single Node"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - single-node
+scenarios:
+  - "Single node scenario"
+`
+	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
+
+	outputDir := filepath.Join(tmpDir, "output")
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir,
+		"--tag", "multi-node", "--tag", "minimal", inputFile})
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	assert.FileExists(t, filepath.Join(outputDir, "multi_node.md"))
+	assert.FileExists(t, filepath.Join(outputDir, "minimal.md"))
+	assert.NoFileExists(t, filepath.Join(outputDir, "single_node.md"))
+}
+
+func TestGenerateCommand_TagFilterCommaSeparatedEqualsRepeated(t *testing.T) {
+	// pflag parses comma-separated --tag values identically to repeated
+	// flags: --tag multi-node,minimal == --tag multi-node --tag minimal.
+	resetFlags()
+	tmpDir := t.TempDir()
+	inputFile := filepath.Join(tmpDir, "plan.yaml")
+	yamlContent := `feature: "Multi Node"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - multi-node
+scenarios:
+  - "Multi node scenario"
+---
+feature: "Minimal"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - minimal
+scenarios:
+  - "Minimal scenario"
+---
+feature: "Single Node"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - single-node
+scenarios:
+  - "Single node scenario"
+`
+	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
+
+	outputDir := filepath.Join(tmpDir, "output")
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir,
+		"--tag", "multi-node,minimal", inputFile})
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	assert.FileExists(t, filepath.Join(outputDir, "multi_node.md"))
+	assert.FileExists(t, filepath.Join(outputDir, "minimal.md"))
+	assert.NoFileExists(t, filepath.Join(outputDir, "single_node.md"))
+}
+
+func TestGenerateCommand_TagFilterEmptyValueMeansNoFilter(t *testing.T) {
+	// pflag's CSV parsing turns --tag "" into an empty slice, which the
+	// filter treats as "no tag filter": every plan renders, including
+	// untagged ones. This documents the quirk rather than erroring.
+	resetFlags()
+	tmpDir := t.TempDir()
+	inputFile := filepath.Join(tmpDir, "plan.yaml")
+	yamlContent := `feature: "Tagged"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - multi-node
+scenarios:
+  - "Tagged scenario"
+---
+feature: "Untagged"
+type: "security"
+status: "implemented"
+risk: "stable"
+scenarios:
+  - "Untagged scenario"
+`
+	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
+
+	outputDir := filepath.Join(tmpDir, "output")
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir, "--tag", "", inputFile})
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	assert.FileExists(t, filepath.Join(outputDir, "tagged.md"))
+	assert.FileExists(t, filepath.Join(outputDir, "untagged.md"))
+}
+
+func TestGenerateCommand_RiskAndTagFilterIntersection(t *testing.T) {
+	// The issue #6 example: --risk edge --tag multi-node renders only
+	// edge-risk plans tagged multi-node.
+	resetFlags()
+	tmpDir := t.TempDir()
+	inputFile := filepath.Join(tmpDir, "plan.yaml")
+	yamlContent := `feature: "Edge Multi Node"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - multi-node
+scenarios:
+  - "Edge multi node scenario"
+---
+feature: "Stable Multi Node"
+type: "functional"
+status: "planned"
+risk: "stable"
+tags:
+  - multi-node
+scenarios:
+  - "Stable multi node scenario"
+---
+feature: "Edge Single Node"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - single-node
+scenarios:
+  - "Edge single node scenario"
+`
+	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
+
+	outputDir := filepath.Join(tmpDir, "output")
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "-o", outputDir,
+		"--risk", "edge", "--tag", "multi-node", inputFile})
+	err := rootCmd.Execute()
+	require.NoError(t, err)
+
+	assert.FileExists(t, filepath.Join(outputDir, "edge_multi_node.md"))
+	assert.NoFileExists(t, filepath.Join(outputDir, "stable_multi_node.md"))
+	assert.NoFileExists(t, filepath.Join(outputDir, "edge_single_node.md"))
+}
+
+func TestGenerateCommand_InvalidTagFlag(t *testing.T) {
+	// --tag validation happens before any disk I/O, so the YAML file
+	// can be missing or invalid; we just need generate to refuse the
+	// flag value.
+	resetFlags()
+	rootCmd.SetArgs([]string{"generate", "--format", "md", "--tag", "foo bar", "/nonexistent/plan.yaml"})
+	err := rootCmd.Execute()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "--tag")
+	assert.Contains(t, err.Error(), "invalid tag 'foo bar'")
+}
+
 func TestGenerateCommand_StatusAndRisk_Intersection(t *testing.T) {
 	// --status=implemented --risk=candidate: only "implemented" plans whose
 	// risk is edge, beta, or candidate.
@@ -874,4 +1092,16 @@ scenarios:
 	err := rootCmd.Execute()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "--status must be one of")
+}
+
+func TestServeCommand_InvalidTagFlag(t *testing.T) {
+	// --tag validation happens before any disk I/O, so the YAML file
+	// can be missing or invalid; we just need serve to refuse the
+	// flag value.
+	resetFlags()
+	rootCmd.SetArgs([]string{"serve", "--tag", "foo bar", "/nonexistent/plan.yaml"})
+	err := rootCmd.Execute()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "--tag")
+	assert.Contains(t, err.Error(), "invalid tag 'foo bar'")
 }

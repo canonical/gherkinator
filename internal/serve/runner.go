@@ -21,8 +21,9 @@ import (
 // projectName controls the title of the rendered Sphinx site; pass "" to
 // use the basename of the current working directory.
 //
-// riskFilter and statusFilter are intersected (see GenerateSphinxDocs).
-func Run(inputFiles []string, projectName string, riskFilter string, statusFilter string) error {
+// The filters in opts are intersected (see GenerateSphinxDocs); pass the
+// zero value to render every plan.
+func Run(inputFiles []string, projectName string, opts common.FilterOptions) error {
 	if projectName == "" {
 		cwd, err := os.Getwd()
 		if err != nil {
@@ -59,7 +60,7 @@ func Run(inputFiles []string, projectName string, riskFilter string, statusFilte
 		}
 		var merged []common.TestPlan
 		for _, file := range inputFiles {
-			plans, err := GenerateSphinxDocs(file, docsDir, riskFilter, statusFilter)
+			plans, err := GenerateSphinxDocs(file, docsDir, opts)
 			if err != nil {
 				return fmt.Errorf("failed to generate sphinx docs for %s: %w", file, err)
 			}

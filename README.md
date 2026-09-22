@@ -83,6 +83,10 @@ examples:                       # Parametrised data rows.  Use <param> tokens
     - admin                     # column headers derived from those tokens.
   - - bob
     - viewer
+
+tags:                           # Optional classification tags. Each tag
+  - single-node                 # must be non-empty and contain no
+  - multi-node                  # whitespace or commas.
 ```
 
 ### Parametrised scenarios
@@ -164,6 +168,8 @@ gherkinator generate [files-or-directories...] [flags]
 | `--format` | | `gh` | Output format: `gh` (Gherkin) or `md` (Markdown) |
 | `--output-dir` | `-o` | `.` | Directory to write output files into |
 | `--risk` | | | Filter by risk level: `edge`, `beta`, `candidate`, `stable` (cumulative) |
+| `--status` | | | Filter by status: `planned`, `implemented`, `deprecated` (exact match) |
+| `--tag` | | | Filter by tag: render plans carrying **at least one** requested tag (union). Values may be repeated (`--tag a --tag b`) or comma-separated (`--tag a,b`). Untagged plans are excluded while the filter is set |
 
 Positional arguments may be any combination of YAML files
 (`.yaml`/`.yml`) and directories; directories are scanned
@@ -185,6 +191,16 @@ gherkinator generate --format md charmed-hpc/test-plan.yaml -o charmed-hpc --ris
 # Generate edge and beta risk plans
 gherkinator generate --format md charmed-hpc/test-plan.yaml -o charmed-hpc --risk beta
 
+# Generate only plans tagged for multi-node deployments (untagged plans
+# are excluded while --tag is set)
+gherkinator generate --format gh --tag multi-node charmed-hpc/test-plan.yaml -o charmed-hpc
+
+# Union across several tags: render plans tagged single-node OR minimal
+gherkinator generate --format gh --tag single-node --tag minimal charmed-hpc/test-plan.yaml -o charmed-hpc
+
+# Combine risk and tag filters: edge-risk plans tagged multi-node
+gherkinator generate --risk edge --tag multi-node
+
 # Scan a directory of YAML files
 gherkinator generate --format md charmed-hpc/plans/ -o charmed-hpc
 
@@ -197,6 +213,12 @@ gherkinator generate --format gh -o out
 
 Output filenames are derived from the `feature` field
 (`"GPU job submission"` → `gpu_job_submission.feature` / `.md`).
+
+Plans that declare `tags` render them as Gherkin tag annotations
+(e.g. `@functional @edge @multi-node`) in `.feature` output and as a
+`**Tags:**` bullet in Markdown output. Adding tags to a plan changes
+its rendered `.feature` content, so regenerate and re-commit any
+feature files checked into your repository (see `diff`).
 
 ---
 
@@ -260,6 +282,8 @@ gherkinator serve [files-or-directories...] [flags]
 | --- | --- | --- | --- |
 | `--name` | `-n` | current working directory name | Project name shown in the docs |
 | `--risk` | | | Filter by risk level: `edge`, `beta`, `candidate`, `stable` (cumulative) |
+| `--status` | | | Filter by status: `planned`, `implemented`, `deprecated` (exact match) |
+| `--tag` | | | Filter by tag: serve plans carrying **at least one** requested tag (union). Values may be repeated (`--tag a --tag b`) or comma-separated (`--tag a,b`). Untagged plans are excluded while the filter is set |
 
 Positional arguments follow the same rules as `generate`: any mix of
 YAML files and directories.  When no arguments are supplied, the
@@ -300,6 +324,9 @@ gherkinator serve charmed-hpc/test-plan.yaml --name "Charmed HPC"
 
 # Serve only edge and beta risk plans
 gherkinator serve charmed-hpc/test-plan.yaml --risk beta
+
+# Serve only plans tagged for multi-node deployments
+gherkinator serve charmed-hpc/test-plan.yaml --tag multi-node
 
 # Serve from a directory of YAML files
 gherkinator serve charmed-hpc/plans/ --name "Charmed HPC"
@@ -377,6 +404,7 @@ gherkinator diff [flags] <plans> <features>
 | --- | --- | --- |
 | `--risk` | _(unset)_ | Restrict the comparison to plans at or below the given risk level (`edge`, `beta`, `candidate`, `stable`) |
 | `--status` | _(unset)_ | Restrict the comparison to plans with the given status (`planned`, `implemented`, `deprecated`) |
+| `--tag` | _(unset)_ | Restrict the comparison to plans carrying at least one requested tag (union); repeatable or comma-separated. Untagged plans are excluded while set |
 | `--show` | `false` | Print a unified diff to `stdout` for every feature file whose contents differ from the rendered plan |
 
 The `<plans>` argument follows the same rules as `generate`: a YAML
@@ -415,6 +443,9 @@ gherkinator diff --status=implemented plans/ features/
 
 # Restrict to plans at or below the "beta" risk level
 gherkinator diff --risk=beta plans/ features/
+
+# Restrict to plans tagged multi-node (repeat --tag for a union)
+gherkinator diff --tag multi-node plans/ features/
 
 # Print unified diffs (matching `diff -u` output) for every differing file
 gherkinator diff --status=implemented --show plans/ features/

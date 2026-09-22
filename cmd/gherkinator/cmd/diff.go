@@ -23,8 +23,8 @@ var showDiff bool
 // may be a file path or directory; <features> must be a directory
 // containing the on-disk feature files to compare against.
 //
-// The --risk and --status flags are interpreted identically to the
-// `generate` and `serve` subcommands and restrict which plans are
+// The --risk, --status, and --tag flags are interpreted identically to
+// the `generate` and `serve` subcommands and restrict which plans are
 // considered during the comparison.
 //
 // Exit codes:
@@ -49,13 +49,17 @@ var diffCmd = &cobra.Command{
 		if statusFilter != "" && !common.IsValidStatus(statusFilter) {
 			return fmt.Errorf("--status must be one of 'planned', 'implemented', or 'deprecated'")
 		}
+		if err := validateTagFilters(); err != nil {
+			return err
+		}
 
 		inputFiles, err := common.DiscoverYAMLFiles([]string{args[0]})
 		if err != nil {
 			return fmt.Errorf("failed to resolve plan inputs: %w", err)
 		}
 
-		os.Exit(diff.Run(inputFiles, args[1], riskFilter, statusFilter, showDiff, os.Stdout, os.Stderr))
+		filterOpts := common.FilterOptions{Risk: riskFilter, Status: statusFilter, Tags: tagFilters}
+		os.Exit(diff.Run(inputFiles, args[1], filterOpts, showDiff, os.Stdout, os.Stderr))
 		return nil
 	},
 }
@@ -63,5 +67,7 @@ var diffCmd = &cobra.Command{
 func init() {
 	diffCmd.Flags().StringVar(&riskFilter, "risk", "", "Filter by risk level (edge, beta, candidate, stable)")
 	diffCmd.Flags().StringVar(&statusFilter, "status", "", "Filter by status (planned, implemented, deprecated)")
+	diffCmd.Flags().StringSliceVar(&tagFilters, "tag", nil,
+		"Filter by tag; repeatable (union) and combinable with --risk and --status")
 	diffCmd.Flags().BoolVar(&showDiff, "show", false, "Print unified diffs for differing feature files to stdout")
 }

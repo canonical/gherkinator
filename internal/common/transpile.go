@@ -36,7 +36,12 @@ func GenerateGherkin(plan TestPlan) string {
 		}
 	}
 
-	fmt.Fprintf(&builder, "\n  @%s @%s\n", plan.Type, plan.Risk)
+	// Custom tags are appended after the type and risk tags so plans
+	// without tags render byte-identically to untagged plans.
+	gherkinTags := make([]string, 0, 2+len(plan.Tags))
+	gherkinTags = append(gherkinTags, plan.Type, plan.Risk)
+	gherkinTags = append(gherkinTags, plan.Tags...)
+	fmt.Fprintf(&builder, "\n  @%s\n", strings.Join(gherkinTags, " @"))
 
 	hasExamples := len(plan.Examples) > 0
 	for _, scenario := range plan.Scenarios {
@@ -88,6 +93,9 @@ func GenerateMarkdown(plan TestPlan) string {
 	fmt.Fprintf(&builder, "- **Type:** %s\n", plan.Type)
 	fmt.Fprintf(&builder, "- **Status:** %s\n", plan.Status)
 	fmt.Fprintf(&builder, "- **Risk:** %s\n", plan.Risk)
+	if len(plan.Tags) > 0 {
+		fmt.Fprintf(&builder, "- **Tags:** %s\n", strings.Join(plan.Tags, ", "))
+	}
 	if plan.Issues != nil {
 		fmt.Fprintf(&builder, "- **Issues:** %s\n", *plan.Issues)
 	}

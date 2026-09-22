@@ -173,6 +173,61 @@ func TestGenerateMarkdown_WithIssuesAndDocs(t *testing.T) {
 	assert.Contains(t, result, "- **Docs:** https://docs.example.com")
 }
 
+func TestGenerateGherkin_WithTags(t *testing.T) {
+	// Custom tags are appended to the type and risk tags on the tag
+	// line so downstream BDD runners can filter on them too.
+	plan := TestPlan{
+		Feature:   "Tagged Feature",
+		Type:      "functional",
+		Status:    "planned",
+		Risk:      "edge",
+		Tags:      []string{"multi-node", "minimal"},
+		Scenarios: []string{"A scenario\nGiven x"},
+	}
+	result := GenerateGherkin(plan)
+	assert.Contains(t, result, "@functional @edge @multi-node @minimal")
+}
+
+func TestGenerateGherkin_UntaggedPlanHasNoCustomTags(t *testing.T) {
+	// Untagged plans must render byte-identically to pre-tags output so
+	// committed .feature files do not drift.
+	plan := TestPlan{
+		Feature:   "Untagged Feature",
+		Type:      "functional",
+		Status:    "planned",
+		Risk:      "stable",
+		Scenarios: []string{"A scenario\nGiven x"},
+	}
+	result := GenerateGherkin(plan)
+	assert.Contains(t, result, "@functional @stable\n")
+	assert.NotContains(t, result, "@multi-node")
+}
+
+func TestGenerateMarkdown_WithTags(t *testing.T) {
+	plan := TestPlan{
+		Feature:   "Tagged Feature",
+		Type:      "functional",
+		Status:    "planned",
+		Risk:      "edge",
+		Tags:      []string{"multi-node", "minimal"},
+		Scenarios: []string{"A scenario"},
+	}
+	result := GenerateMarkdown(plan)
+	assert.Contains(t, result, "- **Tags:** multi-node, minimal")
+}
+
+func TestGenerateMarkdown_UntaggedPlanOmitsTagsLine(t *testing.T) {
+	plan := TestPlan{
+		Feature:   "Untagged Feature",
+		Type:      "functional",
+		Status:    "planned",
+		Risk:      "stable",
+		Scenarios: []string{"A scenario"},
+	}
+	result := GenerateMarkdown(plan)
+	assert.NotContains(t, result, "**Tags:**")
+}
+
 func TestGenerateMarkdown_NilOptionalFields(t *testing.T) {
 	plan := TestPlan{
 		Feature:   "Simple",

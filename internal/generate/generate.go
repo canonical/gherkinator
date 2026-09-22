@@ -15,15 +15,14 @@ import (
 // ProcessFile reads a YAML file (handling multi-document streams), validates
 // schemas, transpiles to the requested format, and writes output files.
 //
-// riskFilter and statusFilter are intersected: a plan must satisfy both
-// filters (or either filter, when its value is empty) to be rendered.
-// Pass "" for either filter to disable that dimension of filtering.
+// The filters in opts are intersected (see common.FilterOptions); pass
+// the zero value to render every plan in the file.
 //
 // Internally this delegates the load/validate/filter/render pipeline to
 // common.RenderPlans and only owns the disk-write concern specific to
 // `gherkinator generate`: writing files flat into outputDir.
-func ProcessFile(filename string, format string, outputDir string, riskFilter string, statusFilter string) error {
-	rendered, err := common.RenderPlans([]string{filename}, format, riskFilter, statusFilter)
+func ProcessFile(filename string, format string, outputDir string, opts common.FilterOptions) error {
+	rendered, err := common.RenderPlans([]string{filename}, format, opts)
 	if err != nil {
 		return err
 	}

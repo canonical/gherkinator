@@ -27,21 +27,21 @@ type RenderedFile struct {
 
 // RenderPlans loads YAML test plans from the given input files,
 // validates each plan's schema and (for gh format) the generated
-// Gherkin output, applies the optional risk/status filters, and
-// returns each surviving plan as a RenderedFile.  No disk I/O is
-// performed: callers handle writing or comparing the renderings.
+// Gherkin output, applies the optional filters in opts, and returns
+// each surviving plan as a RenderedFile.  No disk I/O is performed:
+// callers handle writing or comparing the renderings.
 //
 // The format argument must be "gh" (Gherkin, ".feature" output) or
 // "md" (Markdown, ".md" output).
 //
-// riskFilter and statusFilter are intersected: a plan must satisfy
-// both filters (or either filter, when its value is empty) to be
-// rendered.  Pass "" for either filter to disable that dimension.
+// The filters in opts are intersected: a plan must satisfy every
+// non-empty dimension to be rendered (see FilterOptions).  Pass the
+// zero value to disable all filtering.
 //
 // Plans with an empty feature field are rendered using a stable
 // fallback basename ("plan_N") so that empty names produce a
 // deterministic, non-empty filename regardless of format.
-func RenderPlans(inputFiles []string, format string, riskFilter string, statusFilter string) ([]RenderedFile, error) {
+func RenderPlans(inputFiles []string, format string, opts FilterOptions) ([]RenderedFile, error) {
 	if format != "gh" && format != "md" {
 		return nil, fmt.Errorf("unsupported format: %s", format)
 	}
@@ -64,8 +64,7 @@ func RenderPlans(inputFiles []string, format string, riskFilter string, statusFi
 		plans = append(plans, docPlans...)
 	}
 
-	filteredPlans := FilterPlansByStatus(plans, statusFilter)
-	filteredPlans = FilterPlansByRisk(filteredPlans, riskFilter)
+	filteredPlans := opts.Apply(plans)
 
 	var rendered []RenderedFile
 	for i, plan := range filteredPlans {

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/canonical/gherkinator/internal/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,7 +28,7 @@ scenarios:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "output")
-	err = ProcessFile(inputFile, "gh", outputDir, "", "")
+	err = ProcessFile(inputFile, "gh", outputDir, common.FilterOptions{})
 	assert.NoError(t, err)
 
 	outFile := filepath.Join(outputDir, "login_feature.feature")
@@ -57,7 +58,7 @@ scenarios:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "output")
-	err = ProcessFile(inputFile, "md", outputDir, "", "")
+	err = ProcessFile(inputFile, "md", outputDir, common.FilterOptions{})
 	assert.NoError(t, err)
 
 	outFile := filepath.Join(outputDir, "login_feature.md")
@@ -97,7 +98,7 @@ scenarios:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "output")
-	err = ProcessFile(inputFile, "md", outputDir, "", "")
+	err = ProcessFile(inputFile, "md", outputDir, common.FilterOptions{})
 	assert.NoError(t, err)
 
 	assert.FileExists(t, filepath.Join(outputDir, "feature_one.md"))
@@ -118,7 +119,7 @@ scenarios:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "output")
-	err = ProcessFile(inputFile, "gh", outputDir, "", "")
+	err = ProcessFile(inputFile, "gh", outputDir, common.FilterOptions{})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "validation error")
 }
@@ -131,13 +132,13 @@ func TestProcessFile_InvalidYAML(t *testing.T) {
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "output")
-	err = ProcessFile(inputFile, "gh", outputDir, "", "")
+	err = ProcessFile(inputFile, "gh", outputDir, common.FilterOptions{})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode YAML")
 }
 
 func TestProcessFile_FileNotFound(t *testing.T) {
-	err := ProcessFile("/nonexistent/file.yaml", "gh", "/tmp/out", "", "")
+	err := ProcessFile("/nonexistent/file.yaml", "gh", "/tmp/out", common.FilterOptions{})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to open file")
 }
@@ -156,7 +157,7 @@ scenarios:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "output")
-	err = ProcessFile(inputFile, "xml", outputDir, "", "")
+	err = ProcessFile(inputFile, "xml", outputDir, common.FilterOptions{})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported format")
 }
@@ -179,7 +180,7 @@ scenarios:
 	require.NoError(t, err)
 
 	outputDir := filepath.Join(tmpDir, "output")
-	err = ProcessFile(inputFile, "md", outputDir, "", "")
+	err = ProcessFile(inputFile, "md", outputDir, common.FilterOptions{})
 	assert.NoError(t, err)
 
 	// Should use plan_1 as fallback filename
@@ -216,7 +217,7 @@ scenarios:
 	outputDir := filepath.Join(tmpDir, "output")
 
 	// Test --risk=beta (should include edge and beta, but not stable)
-	err = ProcessFile(inputFile, "md", outputDir, "beta", "")
+	err = ProcessFile(inputFile, "md", outputDir, common.FilterOptions{Risk: "beta"})
 	assert.NoError(t, err)
 
 	assert.FileExists(t, filepath.Join(outputDir, "edge_feature.md"))
@@ -247,7 +248,7 @@ scenarios:
 	outputDir := filepath.Join(tmpDir, "output")
 
 	// Test --risk=edge (should only include edge)
-	err = ProcessFile(inputFile, "md", outputDir, "edge", "")
+	err = ProcessFile(inputFile, "md", outputDir, common.FilterOptions{Risk: "edge"})
 	assert.NoError(t, err)
 
 	assert.FileExists(t, filepath.Join(outputDir, "edge_feature.md"))
@@ -291,7 +292,7 @@ scenarios:
 	outputDir := filepath.Join(tmpDir, "output")
 
 	// Test --risk=stable (should include all)
-	err = ProcessFile(inputFile, "md", outputDir, "stable", "")
+	err = ProcessFile(inputFile, "md", outputDir, common.FilterOptions{Risk: "stable"})
 	assert.NoError(t, err)
 
 	assert.FileExists(t, filepath.Join(outputDir, "edge_feature.md"))
@@ -327,7 +328,7 @@ scenarios:
 	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
 
 	outputDir := filepath.Join(tmpDir, "output")
-	err := ProcessFile(inputFile, "md", outputDir, "", "planned")
+	err := ProcessFile(inputFile, "md", outputDir, common.FilterOptions{Status: "planned"})
 	require.NoError(t, err)
 
 	assert.FileExists(t, filepath.Join(outputDir, "planned_feature.md"))
@@ -362,7 +363,7 @@ scenarios:
 	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
 
 	outputDir := filepath.Join(tmpDir, "output")
-	err := ProcessFile(inputFile, "md", outputDir, "", "implemented")
+	err := ProcessFile(inputFile, "md", outputDir, common.FilterOptions{Status: "implemented"})
 	require.NoError(t, err)
 
 	assert.NoFileExists(t, filepath.Join(outputDir, "planned_feature.md"))
@@ -397,7 +398,7 @@ scenarios:
 	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
 
 	outputDir := filepath.Join(tmpDir, "output")
-	err := ProcessFile(inputFile, "md", outputDir, "", "deprecated")
+	err := ProcessFile(inputFile, "md", outputDir, common.FilterOptions{Status: "deprecated"})
 	require.NoError(t, err)
 
 	assert.NoFileExists(t, filepath.Join(outputDir, "planned_feature.md"))
@@ -426,7 +427,7 @@ scenarios:
 
 	outputDir := filepath.Join(tmpDir, "output")
 	// No plan is deprecated — should produce no output files.
-	err := ProcessFile(inputFile, "md", outputDir, "", "deprecated")
+	err := ProcessFile(inputFile, "md", outputDir, common.FilterOptions{Status: "deprecated"})
 	require.NoError(t, err)
 
 	assert.NoFileExists(t, filepath.Join(outputDir, "planned_feature.md"))
@@ -476,7 +477,7 @@ scenarios:
 	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
 
 	outputDir := filepath.Join(tmpDir, "output")
-	err := ProcessFile(inputFile, "md", outputDir, "candidate", "implemented")
+	err := ProcessFile(inputFile, "md", outputDir, common.FilterOptions{Risk: "candidate", Status: "implemented"})
 	require.NoError(t, err)
 
 	assert.FileExists(t, filepath.Join(outputDir, "implemented_edge.md"))
@@ -529,7 +530,7 @@ scenarios:
 	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
 
 	outputDir := filepath.Join(tmpDir, "output")
-	err := ProcessFile(inputFile, "md", outputDir, "beta", "planned")
+	err := ProcessFile(inputFile, "md", outputDir, common.FilterOptions{Risk: "beta", Status: "planned"})
 	require.NoError(t, err)
 
 	assert.FileExists(t, filepath.Join(outputDir, "planned_edge.md"))
@@ -537,6 +538,133 @@ scenarios:
 	assert.NoFileExists(t, filepath.Join(outputDir, "planned_candidate.md"))
 	assert.NoFileExists(t, filepath.Join(outputDir, "planned_stable.md"))
 	assert.NoFileExists(t, filepath.Join(outputDir, "implemented_beta.md"))
+}
+
+func TestProcessFile_TagFilter(t *testing.T) {
+	// --tag renders only plans carrying the requested tag; untagged
+	// plans are excluded while the tag filter is active.
+	tmpDir := t.TempDir()
+	yamlContent := `feature: "Multi Node"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - multi-node
+scenarios:
+  - "Multi node scenario"
+---
+feature: "Single Node"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - single-node
+scenarios:
+  - "Single node scenario"
+---
+feature: "Untagged"
+type: "security"
+status: "implemented"
+risk: "stable"
+scenarios:
+  - "Untagged scenario"
+`
+	inputFile := filepath.Join(tmpDir, "test-plan.yaml")
+	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
+
+	outputDir := filepath.Join(tmpDir, "output")
+	err := ProcessFile(inputFile, "md", outputDir, common.FilterOptions{Tags: []string{"multi-node"}})
+	require.NoError(t, err)
+
+	assert.FileExists(t, filepath.Join(outputDir, "multi_node.md"))
+	assert.NoFileExists(t, filepath.Join(outputDir, "single_node.md"))
+	assert.NoFileExists(t, filepath.Join(outputDir, "untagged.md"))
+}
+
+func TestProcessFile_TagFilterUnion(t *testing.T) {
+	// Multiple requested tags use union semantics: a plan matching any
+	// requested tag renders.
+	tmpDir := t.TempDir()
+	yamlContent := `feature: "Multi Node"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - multi-node
+scenarios:
+  - "Multi node scenario"
+---
+feature: "Minimal"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - minimal
+scenarios:
+  - "Minimal scenario"
+---
+feature: "Single Node"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - single-node
+scenarios:
+  - "Single node scenario"
+`
+	inputFile := filepath.Join(tmpDir, "test-plan.yaml")
+	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
+
+	outputDir := filepath.Join(tmpDir, "output")
+	err := ProcessFile(inputFile, "md", outputDir, common.FilterOptions{Tags: []string{"multi-node", "minimal"}})
+	require.NoError(t, err)
+
+	assert.FileExists(t, filepath.Join(outputDir, "multi_node.md"))
+	assert.FileExists(t, filepath.Join(outputDir, "minimal.md"))
+	assert.NoFileExists(t, filepath.Join(outputDir, "single_node.md"))
+}
+
+func TestProcessFile_RiskAndTagFilterIntersection(t *testing.T) {
+	// --risk=edge --tag multi-node (the issue #6 example): only plans
+	// that are edge risk AND tagged multi-node render.
+	tmpDir := t.TempDir()
+	yamlContent := `feature: "Edge Multi Node"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - multi-node
+scenarios:
+  - "Edge multi node scenario"
+---
+feature: "Stable Multi Node"
+type: "functional"
+status: "planned"
+risk: "stable"
+tags:
+  - multi-node
+scenarios:
+  - "Stable multi node scenario"
+---
+feature: "Edge Single Node"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - single-node
+scenarios:
+  - "Edge single node scenario"
+`
+	inputFile := filepath.Join(tmpDir, "test-plan.yaml")
+	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
+
+	outputDir := filepath.Join(tmpDir, "output")
+	err := ProcessFile(inputFile, "md", outputDir, common.FilterOptions{Risk: "edge", Tags: []string{"multi-node"}})
+	require.NoError(t, err)
+
+	assert.FileExists(t, filepath.Join(outputDir, "edge_multi_node.md"))
+	assert.NoFileExists(t, filepath.Join(outputDir, "stable_multi_node.md"))
+	assert.NoFileExists(t, filepath.Join(outputDir, "edge_single_node.md"))
 }
 
 func TestProcessFile_BothFilters_ImplementedAndStable(t *testing.T) {
@@ -568,7 +696,7 @@ scenarios:
 	require.NoError(t, os.WriteFile(inputFile, []byte(yamlContent), 0644))
 
 	outputDir := filepath.Join(tmpDir, "output")
-	err := ProcessFile(inputFile, "md", outputDir, "stable", "implemented")
+	err := ProcessFile(inputFile, "md", outputDir, common.FilterOptions{Risk: "stable", Status: "implemented"})
 	require.NoError(t, err)
 
 	assert.FileExists(t, filepath.Join(outputDir, "implemented_edge.md"))

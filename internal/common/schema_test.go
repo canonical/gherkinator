@@ -73,3 +73,37 @@ func TestValidateSchema_EmptyStatus(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid status ''")
 }
+
+func TestValidateSchema_ValidTags(t *testing.T) {
+	plan := TestPlan{Type: "functional", Status: "planned", Risk: "edge", Tags: []string{"single-node", "multi-node"}}
+	assert.NoError(t, ValidateSchema(plan))
+}
+
+func TestValidateSchema_NoTagsIsValid(t *testing.T) {
+	// Tags are optional: a plan without the field validates fine.
+	plan := TestPlan{Type: "functional", Status: "planned", Risk: "edge"}
+	assert.NoError(t, ValidateSchema(plan))
+}
+
+func TestValidateSchema_EmptyTagRejected(t *testing.T) {
+	plan := TestPlan{Type: "functional", Status: "planned", Risk: "edge", Tags: []string{""}}
+	err := ValidateSchema(plan)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid tag ''")
+}
+
+func TestValidateSchema_TagWithWhitespaceRejected(t *testing.T) {
+	// Whitespace would break Gherkin tag rendering, so it is rejected
+	// at authoring time rather than at generation time.
+	plan := TestPlan{Type: "functional", Status: "planned", Risk: "edge", Tags: []string{"foo bar"}}
+	err := ValidateSchema(plan)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid tag 'foo bar'")
+}
+
+func TestValidateSchema_TagWithCommaRejected(t *testing.T) {
+	plan := TestPlan{Type: "functional", Status: "planned", Risk: "edge", Tags: []string{"a,b"}}
+	err := ValidateSchema(plan)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid tag 'a,b'")
+}

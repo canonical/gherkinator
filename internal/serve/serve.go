@@ -34,14 +34,13 @@ var titleCaser = cases.Title(language.English)
 // written to <docsDir>/<type>/<safe_feature_name>.md.  It returns the
 // list of generated plans so callers can build a toctree.
 //
-// riskFilter and statusFilter are intersected: a plan must satisfy both
-// filters (or either filter, when its value is empty) to be rendered.
-// Pass "" for either filter to disable that dimension of filtering.
+// The filters in opts are intersected (see common.FilterOptions); pass
+// the zero value to render every plan in the file.
 //
 // Internally this delegates the load/validate/filter/render pipeline to
 // common.RenderPlans and only owns the Sphinx-specific disk layout.
-func GenerateSphinxDocs(yamlFile string, docsDir string, riskFilter string, statusFilter string) ([]common.TestPlan, error) {
-	rendered, err := common.RenderPlans([]string{yamlFile}, "md", riskFilter, statusFilter)
+func GenerateSphinxDocs(yamlFile string, docsDir string, opts common.FilterOptions) ([]common.TestPlan, error) {
+	rendered, err := common.RenderPlans([]string{yamlFile}, "md", opts)
 	if err != nil {
 		return nil, err
 	}
@@ -52,8 +51,7 @@ func GenerateSphinxDocs(yamlFile string, docsDir string, riskFilter string, stat
 	if err != nil {
 		return nil, fmt.Errorf("failed to re-load plans for indexing: %w", err)
 	}
-	filteredPlans := common.FilterPlansByStatus(rawPlans, statusFilter)
-	filteredPlans = common.FilterPlansByRisk(filteredPlans, riskFilter)
+	filteredPlans := opts.Apply(rawPlans)
 
 	for i, plan := range filteredPlans {
 		basename := rendered[i].Filename
@@ -294,15 +292,15 @@ func buildLlmsTxtDescription(projectName string) []string {
 // index with sub-landing pages per test type, and sets the project
 // name in conf.py.
 //
-// riskFilter and statusFilter are intersected (see GenerateSphinxDocs).
-func PrepareSphinxSite(yamlFile string, cloneDir string, projectName string, riskFilter string, statusFilter string) error {
+// The filters in opts are intersected (see GenerateSphinxDocs).
+func PrepareSphinxSite(yamlFile string, cloneDir string, projectName string, opts common.FilterOptions) error {
 	docsDir := filepath.Join(cloneDir, "docs")
 
 	if err := PruneSphinxStackDefaults(docsDir); err != nil {
 		return fmt.Errorf("failed to prune sphinx-stack defaults: %w", err)
 	}
 
-	plans, err := GenerateSphinxDocs(yamlFile, docsDir, riskFilter, statusFilter)
+	plans, err := GenerateSphinxDocs(yamlFile, docsDir, opts)
 	if err != nil {
 		return fmt.Errorf("failed to generate sphinx docs: %w", err)
 	}

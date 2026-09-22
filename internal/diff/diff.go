@@ -24,16 +24,16 @@ const (
 	ExitPlanError = 2
 )
 
-// Run compares the rendered plans (built from inputFiles, filtered by
-// riskFilter and statusFilter) against the .feature files in
-// featuresDir, writing any human-readable classifications to errOut
-// and (when show is true) unified diffs for differing pairs to out.
+// Run compares the rendered plans (built from inputFiles and filtered
+// by opts) against the .feature files in featuresDir, writing any
+// human-readable classifications to errOut and (when show is true)
+// unified diffs for differing pairs to out.
 //
 // It returns the appropriate exit code: ExitClean on no diffs,
 // ExitDiff when any classification fires, or ExitPlanError when a
 // plan could not be loaded, validated, or rendered.
-func Run(inputFiles []string, featuresDir, riskFilter, statusFilter string, show bool, out, errOut io.Writer) int {
-	rendered, err := common.RenderPlans(inputFiles, "gh", riskFilter, statusFilter)
+func Run(inputFiles []string, featuresDir string, opts common.FilterOptions, show bool, out, errOut io.Writer) int {
+	rendered, err := common.RenderPlans(inputFiles, "gh", opts)
 	if err != nil {
 		//nolint:errcheck // Writing to stderr; error is not actionable
 		fmt.Fprintf(errOut, "Error: %s\n", err)

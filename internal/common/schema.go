@@ -14,6 +14,10 @@ type TestPlan struct {
 	Background  *string    `yaml:"background,omitempty"`
 	Scenarios   []string   `yaml:"scenarios"`
 	Examples    [][]string `yaml:"examples,omitempty"`
+
+	// Tags is an optional list of freeform classification tags used to
+	// filter plans by deployment configuration (e.g. "single-node").
+	Tags []string `yaml:"tags,omitempty"`
 }
 
 // ValidateSchema ensures the test plan uses accepted types, statuses, and risks.
@@ -46,6 +50,12 @@ func ValidateSchema(plan TestPlan) error {
 	}
 	if !validRisks[plan.Risk] {
 		return fmt.Errorf("invalid risk '%s': must be one of 'edge', 'beta', 'candidate', or 'stable'", plan.Risk)
+	}
+
+	for _, tag := range plan.Tags {
+		if err := ValidateTag(tag); err != nil {
+			return err
+		}
 	}
 	return nil
 }

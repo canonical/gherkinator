@@ -54,7 +54,7 @@ scenarios:
 	writeFeature(t, featuresDir, "login_feature.feature", expected)
 
 	var stderr bytes.Buffer
-	code := Run([]string{planPath}, featuresDir, "", "", false, &bytes.Buffer{}, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{}, false, &bytes.Buffer{}, &stderr)
 	assert.Equal(t, ExitClean, code)
 	assert.Empty(t, stderr.String())
 }
@@ -76,7 +76,7 @@ scenarios:
 	writeFeature(t, featuresDir, "login_feature.feature", "Feature: Login Feature\nOLD STUFF\n")
 
 	var stderr bytes.Buffer
-	code := Run([]string{planPath}, featuresDir, "", "", false, &bytes.Buffer{}, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{}, false, &bytes.Buffer{}, &stderr)
 	assert.Equal(t, ExitDiff, code)
 	assert.Contains(t, stderr.String(), "differs from feature file(s)")
 	assert.Contains(t, stderr.String(), `"login_feature.feature"`)
@@ -98,7 +98,7 @@ scenarios:
 	require.NoError(t, os.MkdirAll(featuresDir, 0755))
 
 	var stderr bytes.Buffer
-	code := Run([]string{planPath}, featuresDir, "", "", false, &bytes.Buffer{}, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{}, false, &bytes.Buffer{}, &stderr)
 	assert.Equal(t, ExitDiff, code)
 	assert.Contains(t, stderr.String(), "is missing")
 	assert.Contains(t, stderr.String(), `"Login Feature"`)
@@ -131,7 +131,7 @@ scenarios:
 	writeFeature(t, featuresDir, "orphan.feature", "Feature: Orphan\n")
 
 	var stderr bytes.Buffer
-	code := Run([]string{planPath}, featuresDir, "", "", false, &bytes.Buffer{}, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{}, false, &bytes.Buffer{}, &stderr)
 	assert.Equal(t, ExitDiff, code)
 	assert.Contains(t, stderr.String(), "matches no test")
 	assert.Contains(t, stderr.String(), `"orphan.feature"`)
@@ -164,7 +164,7 @@ scenarios:
 	writeFeature(t, featuresDir, "orphan.feature", "Feature: Orphan\n")
 
 	var stderr bytes.Buffer
-	code := Run([]string{planPath}, featuresDir, "", "", false, &bytes.Buffer{}, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{}, false, &bytes.Buffer{}, &stderr)
 	assert.Equal(t, ExitDiff, code)
 	assert.Contains(t, stderr.String(), "differs")
 	assert.Contains(t, stderr.String(), "missing")
@@ -194,7 +194,7 @@ scenarios:
 	require.NoError(t, os.MkdirAll(featuresDir, 0755))
 
 	var stderr bytes.Buffer
-	code := Run([]string{planPath}, featuresDir, "", "", false, &bytes.Buffer{}, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{}, false, &bytes.Buffer{}, &stderr)
 	assert.Equal(t, ExitDiff, code)
 	out := stderr.String()
 	assert.Contains(t, out, "are missing")
@@ -231,7 +231,7 @@ scenarios:
 	writeFeature(t, featuresDir, "alpha_feature.feature", "ALPHA OLD")
 
 	var stderr bytes.Buffer
-	code := Run([]string{planPath}, featuresDir, "", "", false, &bytes.Buffer{}, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{}, false, &bytes.Buffer{}, &stderr)
 	assert.Equal(t, ExitDiff, code)
 	assert.Contains(t, stderr.String(), "differ from")
 }
@@ -253,7 +253,7 @@ scenarios:
 	writeFeature(t, featuresDir, "touched_feature.feature", "FEATURE THAT DIFFERS")
 
 	var stderr bytes.Buffer
-	code := Run([]string{planPath}, featuresDir, "", "", false, &bytes.Buffer{}, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{}, false, &bytes.Buffer{}, &stderr)
 	assert.Equal(t, ExitDiff, code)
 	assert.NotContains(t, stderr.String(), "matches no test")
 	assert.Contains(t, stderr.String(), "differs")
@@ -273,7 +273,7 @@ scenarios:
 	require.NoError(t, os.MkdirAll(featuresDir, 0755))
 
 	var stderr bytes.Buffer
-	code := Run([]string{planPath}, featuresDir, "", "", false, &bytes.Buffer{}, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{}, false, &bytes.Buffer{}, &stderr)
 	assert.Equal(t, ExitPlanError, code)
 	assert.Contains(t, stderr.String(), "validation error")
 }
@@ -286,7 +286,7 @@ func TestRun_InvalidYAMLYieldsPlanError(t *testing.T) {
 	require.NoError(t, os.MkdirAll(featuresDir, 0755))
 
 	var stderr bytes.Buffer
-	code := Run([]string{planPath}, featuresDir, "", "", false, &bytes.Buffer{}, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{}, false, &bytes.Buffer{}, &stderr)
 	assert.Equal(t, ExitPlanError, code)
 	assert.Contains(t, stderr.String(), "decode YAML")
 }
@@ -312,7 +312,7 @@ scenarios:
 	require.NoError(t, os.MkdirAll(featuresDir, 0755))
 
 	var stderr bytes.Buffer
-	code := Run([]string{planPath}, featuresDir, "", "", false, &bytes.Buffer{}, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{}, false, &bytes.Buffer{}, &stderr)
 	assert.Equal(t, ExitPlanError, code)
 	assert.Contains(t, stderr.String(), "two or more plans produce")
 	assert.Contains(t, stderr.String(), "same_feature.feature")
@@ -329,7 +329,7 @@ scenarios:
 `)
 
 	var stderr bytes.Buffer
-	code := Run([]string{planPath}, filepath.Join(tmpDir, "nonexistent"), "", "", false, &bytes.Buffer{}, &stderr)
+	code := Run([]string{planPath}, filepath.Join(tmpDir, "nonexistent"), common.FilterOptions{}, false, &bytes.Buffer{}, &stderr)
 	assert.Equal(t, ExitPlanError, code)
 	assert.Contains(t, stderr.String(), "features directory")
 }
@@ -348,7 +348,7 @@ scenarios:
 	require.NoError(t, os.WriteFile(notADir, []byte("data"), 0644))
 
 	var stderr bytes.Buffer
-	code := Run([]string{planPath}, notADir, "", "", false, &bytes.Buffer{}, &stderr)
+	code := Run([]string{planPath}, notADir, common.FilterOptions{}, false, &bytes.Buffer{}, &stderr)
 	assert.Equal(t, ExitPlanError, code)
 	assert.Contains(t, stderr.String(), "not a directory")
 }
@@ -383,7 +383,7 @@ scenarios:
 	// is now an orphan. (--risk=candidate INCLUDES edge, but we have
 	// no feature file for it, so we'd also see a "missing"
 	// classification.)
-	code := Run([]string{planPath}, featuresDir, "candidate", "", false, &bytes.Buffer{}, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{Risk: "candidate"}, false, &bytes.Buffer{}, &stderr)
 	assert.Equal(t, ExitDiff, code)
 	assert.Contains(t, stderr.String(), "matches no test")
 	assert.Contains(t, stderr.String(), `"stable_feature.feature"`)
@@ -404,7 +404,32 @@ scenarios:
 	writeFeature(t, featuresDir, "planned_feature.feature", "Feature: Planned")
 
 	var stderr bytes.Buffer
-	code := Run([]string{planPath}, featuresDir, "", "implemented", false, &bytes.Buffer{}, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{Status: "implemented"}, false, &bytes.Buffer{}, &stderr)
+	assert.Equal(t, ExitDiff, code)
+	assert.Contains(t, stderr.String(), "matches no test")
+}
+
+func TestRun_TagFilterMakesFeatureOrphan(t *testing.T) {
+	// With a tag filter active, a feature file whose plan does not
+	// carry the requested tag is reported as an orphan, mirroring the
+	// risk and status filter behavior.
+	tmpDir := t.TempDir()
+	planPath := writeYAML(t, tmpDir, "p.yaml", `feature: "Tagged Feature"
+type: "functional"
+status: "planned"
+risk: "stable"
+tags:
+  - single-node
+scenarios:
+  - "scenario"
+`)
+
+	featuresDir := filepath.Join(tmpDir, "features")
+	require.NoError(t, os.MkdirAll(featuresDir, 0755))
+	writeFeature(t, featuresDir, "tagged_feature.feature", "Feature: Tagged")
+
+	var stderr bytes.Buffer
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{Tags: []string{"multi-node"}}, false, &bytes.Buffer{}, &stderr)
 	assert.Equal(t, ExitDiff, code)
 	assert.Contains(t, stderr.String(), "matches no test")
 }
@@ -426,7 +451,7 @@ scenarios:
 	writeFeature(t, featuresDir, "login_feature.feature", "OLD LINE\n")
 
 	var stdout, stderr bytes.Buffer
-	code := Run([]string{planPath}, featuresDir, "", "", true, &stdout, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{}, true, &stdout, &stderr)
 	assert.Equal(t, ExitDiff, code)
 	out := stdout.String()
 	assert.Contains(t, out, "--- a/login_feature.feature")
@@ -460,7 +485,7 @@ scenarios:
 	writeFeature(t, featuresDir, "login_feature.feature", expected)
 
 	var stdout, stderr bytes.Buffer
-	code := Run([]string{planPath}, featuresDir, "", "", true, &stdout, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{}, true, &stdout, &stderr)
 	assert.Equal(t, ExitClean, code)
 	assert.Empty(t, stdout.String())
 	assert.Empty(t, stderr.String())
@@ -492,7 +517,7 @@ scenarios:
 	writeFeature(t, featuresDir, "README.txt", "hello")
 
 	var stderr bytes.Buffer
-	code := Run([]string{planPath}, featuresDir, "", "", false, &bytes.Buffer{}, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{}, false, &bytes.Buffer{}, &stderr)
 	assert.Equal(t, ExitClean, code)
 	assert.Empty(t, stderr.String())
 }
@@ -524,7 +549,7 @@ scenarios:
 	writeFeature(t, subDir, "in_subdir.feature", "Feature: In Subdir")
 
 	var stderr bytes.Buffer
-	code := Run([]string{planPath}, featuresDir, "", "", false, &bytes.Buffer{}, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{}, false, &bytes.Buffer{}, &stderr)
 	assert.Equal(t, ExitClean, code)
 	assert.Empty(t, stderr.String())
 }
@@ -795,7 +820,7 @@ scenarios:
 	writeFeature(t, featuresDir, "login_feature.feature", "OLD\n")
 
 	var stderr bytes.Buffer
-	code := Run([]string{planPath}, featuresDir, "", "", true, alwaysFailWriter{}, &stderr)
+	code := Run([]string{planPath}, featuresDir, common.FilterOptions{}, true, alwaysFailWriter{}, &stderr)
 	assert.Equal(t, ExitPlanError, code)
 	assert.Contains(t, stderr.String(), "failed to render diff")
 }

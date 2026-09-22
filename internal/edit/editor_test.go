@@ -1,9 +1,10 @@
 package edit
 
 import (
-	"github.com/canonical/gherkinator/internal/common"
 	"os"
 	"testing"
+
+	"github.com/canonical/gherkinator/internal/common"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -56,6 +57,7 @@ func TestEditHelpTemplate_ContainsSchemaFields(t *testing.T) {
 	assert.Contains(t, template, "risk:")
 	assert.Contains(t, template, "scenarios:")
 	assert.Contains(t, template, "examples:")
+	assert.Contains(t, template, "tags:")
 }
 
 func TestEditHelpTemplate_ContainsValidTypes(t *testing.T) {

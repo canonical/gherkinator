@@ -42,6 +42,7 @@ description: ""
 scenarios:
   - ""
 examples: []
+tags: []
 `
 		filePath := filepath.Join(dirName, fileName)
 		if err := os.WriteFile(filePath, []byte(emptyPlan), 0644); err != nil {

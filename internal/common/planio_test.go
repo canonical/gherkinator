@@ -87,6 +87,23 @@ func TestWriteTestPlans_Success(t *testing.T) {
 	assert.Equal(t, "Feature B", loaded[1].Feature)
 }
 
+func TestWriteTestPlans_RoundTripsTags(t *testing.T) {
+	// `gherkinator edit` rewrites plans via WriteTestPlans, so the tags
+	// field must survive an encode/decode round trip.
+	tmpDir := t.TempDir()
+	outputFile := tmpDir + "/out.yaml"
+
+	original := []TestPlan{
+		{Feature: "Tagged", Type: "functional", Status: "planned", Risk: "edge", Scenarios: []string{"S"}, Tags: []string{"single-node", "minimal"}},
+	}
+	require.NoError(t, WriteTestPlans(outputFile, original))
+
+	loaded, err := LoadTestPlans(outputFile)
+	require.NoError(t, err)
+	require.Len(t, loaded, 1)
+	assert.Equal(t, []string{"single-node", "minimal"}, loaded[0].Tags)
+}
+
 func TestWriteTestPlans_InvalidPath(t *testing.T) {
 	err := WriteTestPlans("/nonexistent/dir/file.yaml", []TestPlan{})
 	assert.Error(t, err)

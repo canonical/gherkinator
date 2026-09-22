@@ -119,10 +119,33 @@ func TestDiffCommand_FlagsRegistered(t *testing.T) {
 		flags := c.Flags()
 		assert.NotNil(t, flags.Lookup("risk"))
 		assert.NotNil(t, flags.Lookup("status"))
+		assert.NotNil(t, flags.Lookup("tag"))
 		assert.NotNil(t, flags.Lookup("show"))
 		return
 	}
 	t.Fatal("diff command not registered")
+}
+
+func TestDiffCommand_InvalidTagFlagReturnsError(t *testing.T) {
+	// --tag validation happens before any disk I/O, so the tag value is
+	// refused before the plans or features directory are read.
+	resetFlags()
+	tmpDir := t.TempDir()
+	planPath := writeDiffYAML(t, tmpDir, "p.yaml", `feature: "Foo"
+type: "functional"
+status: "implemented"
+risk: "stable"
+scenarios:
+  - "scenario"
+`)
+	featuresDir := filepath.Join(tmpDir, "features")
+	require.NoError(t, os.MkdirAll(featuresDir, 0755))
+
+	rootCmd.SetArgs([]string{"diff", "--tag", "foo bar", planPath, featuresDir})
+	err := rootCmd.Execute()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "--tag")
+	assert.Contains(t, err.Error(), "invalid tag 'foo bar'")
 }
 
 func TestDiffExit_InvokesRunWithProvidedArgs(t *testing.T) {
@@ -155,7 +178,7 @@ scenarios:
 	writeDiffFeature(t, featuresDir, "login_feature.feature", content)
 
 	var stdout, stderr bytes.Buffer
-	code := diff.Run([]string{planPath}, featuresDir, "", "", false, &stdout, &stderr)
+	code := diff.Run([]string{planPath}, featuresDir, common.FilterOptions{}, false, &stdout, &stderr)
 	assert.Equal(t, 0, code)
 	assert.Empty(t, stdout.String())
 	assert.Empty(t, stderr.String())

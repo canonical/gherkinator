@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/canonical/gherkinator/internal/common"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/canonical/gherkinator/internal/common"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -37,6 +38,8 @@ func EditHelpTemplate() string {
 ### examples:
 ###   - - alice
 ###   - - bob
+### tags:                       # Optional: deployment classification tags
+###   - single-node            # (non-empty, no whitespace, no commas)
 ###
 ### Multiple plans are separated by '---'.
 ###

@@ -44,7 +44,7 @@ scenarios:
     Given a user exists
 `)
 
-	files, err := RenderPlans([]string{p}, "gh", "", "")
+	files, err := RenderPlans([]string{p}, "gh", FilterOptions{})
 	require.NoError(t, err)
 	require.Len(t, files, 1)
 	assert.Equal(t, "login_feature.feature", files[0].Filename)
@@ -64,7 +64,7 @@ scenarios:
     Given a user exists
 `)
 
-	files, err := RenderPlans([]string{p}, "md", "", "")
+	files, err := RenderPlans([]string{p}, "md", FilterOptions{})
 	require.NoError(t, err)
 	require.Len(t, files, 1)
 	assert.Equal(t, "login_feature.md", files[0].Filename)
@@ -92,7 +92,7 @@ scenarios:
     Given y
 `)
 
-	files, err := RenderPlans([]string{p}, "gh", "", "")
+	files, err := RenderPlans([]string{p}, "gh", FilterOptions{})
 	require.NoError(t, err)
 	require.Len(t, files, 2)
 	assert.Equal(t, "feature_one.feature", files[0].Filename)
@@ -120,7 +120,7 @@ scenarios:
     Given y
 `)
 
-	files, err := RenderPlans([]string{p1, p2}, "gh", "", "")
+	files, err := RenderPlans([]string{p1, p2}, "gh", FilterOptions{})
 	require.NoError(t, err)
 	require.Len(t, files, 2)
 	names := []string{files[0].Filename, files[1].Filename}
@@ -140,7 +140,7 @@ scenarios:
     Given x
 `)
 
-	files, err := RenderPlans([]string{p}, "gh", "", "")
+	files, err := RenderPlans([]string{p}, "gh", FilterOptions{})
 	require.NoError(t, err)
 	require.Len(t, files, 1)
 	assert.Equal(t, "plan_1.feature", files[0].Filename)
@@ -158,7 +158,7 @@ scenarios:
     Given x
 `)
 
-	files, err := RenderPlans([]string{p}, "md", "", "")
+	files, err := RenderPlans([]string{p}, "md", FilterOptions{})
 	require.NoError(t, err)
 	require.Len(t, files, 1)
 	assert.Equal(t, "plan_1.md", files[0].Filename)
@@ -185,7 +185,7 @@ scenarios:
     Given y
 `)
 
-	files, err := RenderPlans([]string{p}, "gh", "", "")
+	files, err := RenderPlans([]string{p}, "gh", FilterOptions{})
 	require.NoError(t, err)
 	require.Len(t, files, 2)
 	assert.Equal(t, "plan_1.feature", files[0].Filename)
@@ -209,7 +209,7 @@ scenarios:
   - "Implemented scenario"
 `)
 
-	files, err := RenderPlans([]string{p}, "gh", "", "planned")
+	files, err := RenderPlans([]string{p}, "gh", FilterOptions{Status: "planned"})
 	require.NoError(t, err)
 	require.Len(t, files, 1)
 	assert.Equal(t, "planned.feature", files[0].Filename)
@@ -232,14 +232,42 @@ scenarios:
   - "Stable scenario"
 `)
 
-	files, err := RenderPlans([]string{p}, "gh", "beta", "")
+	files, err := RenderPlans([]string{p}, "gh", FilterOptions{Risk: "beta"})
 	require.NoError(t, err)
 	require.Len(t, files, 1)
 	assert.Equal(t, "edge.feature", files[0].Filename)
 }
 
+func TestRenderPlans_TagFilter(t *testing.T) {
+	// With a tag filter active, only plans carrying a matching tag
+	// render and the custom tags appear in the Gherkin output.
+	tmpDir := t.TempDir()
+	p := writeYAML(t, tmpDir, "p.yaml", `feature: "Tagged"
+type: "functional"
+status: "planned"
+risk: "edge"
+tags:
+  - multi-node
+scenarios:
+  - "Tagged scenario"
+---
+feature: "Untagged"
+type: "security"
+status: "implemented"
+risk: "stable"
+scenarios:
+  - "Untagged scenario"
+`)
+
+	files, err := RenderPlans([]string{p}, "gh", FilterOptions{Tags: []string{"multi-node"}})
+	require.NoError(t, err)
+	require.Len(t, files, 1)
+	assert.Equal(t, "tagged.feature", files[0].Filename)
+	assert.Contains(t, files[0].Content, "@functional @edge @multi-node")
+}
+
 func TestRenderPlans_FileNotFound(t *testing.T) {
-	files, err := RenderPlans([]string{"/nonexistent/file.yaml"}, "gh", "", "")
+	files, err := RenderPlans([]string{"/nonexistent/file.yaml"}, "gh", FilterOptions{})
 	assert.Error(t, err)
 	assert.Nil(t, files)
 	assert.Contains(t, err.Error(), "failed to open file")
@@ -249,7 +277,7 @@ func TestRenderPlans_InvalidYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := writeYAML(t, tmpDir, "bad.yaml", `{{{not valid yaml`)
 
-	files, err := RenderPlans([]string{p}, "gh", "", "")
+	files, err := RenderPlans([]string{p}, "gh", FilterOptions{})
 	assert.Error(t, err)
 	assert.Nil(t, files)
 	assert.Contains(t, err.Error(), "failed to decode YAML")
@@ -265,7 +293,7 @@ scenarios:
   - "scenario"
 `)
 
-	files, err := RenderPlans([]string{p}, "gh", "", "")
+	files, err := RenderPlans([]string{p}, "gh", FilterOptions{})
 	assert.Error(t, err)
 	assert.Nil(t, files)
 	assert.Contains(t, err.Error(), "validation error")
@@ -288,7 +316,7 @@ scenarios:
   - "scenario"
 `)
 
-	files, err := RenderPlans([]string{p}, "gh", "", "")
+	files, err := RenderPlans([]string{p}, "gh", FilterOptions{})
 	assert.Error(t, err)
 	assert.Nil(t, files)
 	assert.Contains(t, err.Error(), "document 2")
@@ -304,7 +332,7 @@ scenarios:
   - "scenario"
 `)
 
-	files, err := RenderPlans([]string{p}, "xml", "", "")
+	files, err := RenderPlans([]string{p}, "xml", FilterOptions{})
 	assert.Error(t, err)
 	assert.Nil(t, files)
 	assert.Contains(t, err.Error(), "unsupported format")
