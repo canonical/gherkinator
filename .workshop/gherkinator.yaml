@@ -19,6 +19,7 @@ sdks:
     channel: 1.26/stable
   - name: just
     channel: latest/stable
+  - name: project-ubuntu-dev-tools
 
 actions:
   build-deb: |
