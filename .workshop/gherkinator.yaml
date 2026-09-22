@@ -2,7 +2,9 @@ name: gherkinator
 base: ubuntu@26.04
 sdks:
   - name: go
+    channel: 1.26/stable
   - name: just
+    channel: latest/stable
 
 actions:
   build-deb: |
