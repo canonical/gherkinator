@@ -21,6 +21,7 @@ func TestGenerateGherkin_BasicScenario(t *testing.T) {
 	}
 	result := GenerateGherkin(plan)
 	assert.Contains(t, result, "Feature: Login Feature")
+	assert.Contains(t, result, "@functional @stable @planned\nFeature: Login Feature\n")
 	assert.Contains(t, result, "@functional")
 	assert.Contains(t, result, "@stable")
 	assert.Contains(t, result, "@planned")
@@ -175,8 +176,8 @@ func TestGenerateMarkdown_WithIssuesAndDocs(t *testing.T) {
 }
 
 func TestGenerateGherkin_WithTags(t *testing.T) {
-	// Custom tags are appended to the type and risk tags on the tag
-	// line so downstream BDD runners can filter on them too.
+	// Custom tags are appended to the type, risk, and status tags on the
+	// feature-level tag line so downstream BDD runners can filter on themtoo.
 	plan := TestPlan{
 		Feature:   "Tagged Feature",
 		Type:      "functional",
@@ -186,12 +187,12 @@ func TestGenerateGherkin_WithTags(t *testing.T) {
 		Scenarios: []string{"A scenario\nGiven x"},
 	}
 	result := GenerateGherkin(plan)
-	assert.Contains(t, result, "@functional @edge @planned @multi-node @minimal")
+	assert.Contains(t, result, "@functional @edge @planned @multi-node @minimal\nFeature: Tagged Feature\n")
 }
 
 func TestGenerateGherkin_UntaggedPlanHasNoCustomTags(t *testing.T) {
 	// Untagged plans render the classification tags (type, risk, status)
-	// without any custom-tag segment.
+	// on the feature-level tag line without any custom-tag segment.
 	plan := TestPlan{
 		Feature:   "Untagged Feature",
 		Type:      "functional",
@@ -200,13 +201,14 @@ func TestGenerateGherkin_UntaggedPlanHasNoCustomTags(t *testing.T) {
 		Scenarios: []string{"A scenario\nGiven x"},
 	}
 	result := GenerateGherkin(plan)
-	assert.Contains(t, result, "@functional @stable @planned\n")
+	assert.Contains(t, result, "@functional @stable @planned\nFeature: Untagged Feature\n")
 	assert.NotContains(t, result, "@multi-node")
 }
 
 func TestGenerateGherkin_StatusTag(t *testing.T) {
-	// Status is rendered between the risk tag and custom tags so BDD
-	// runners can skip planned/deprecated scenarios via tag marks.
+	// Status is rendered between the risk tag and custom tags on the
+	// feature-level tag line so BDD runners can skip planned/deprecated
+	// scenarios via tag marks.
 	plan := TestPlan{
 		Feature:   "Statused Feature",
 		Type:      "functional",
@@ -216,7 +218,7 @@ func TestGenerateGherkin_StatusTag(t *testing.T) {
 		Scenarios: []string{"A scenario\nGiven x"},
 	}
 	result := GenerateGherkin(plan)
-	assert.Contains(t, result, "@functional @stable @implemented @multi-node\n")
+	assert.Contains(t, result, "@functional @stable @implemented @multi-node\nFeature: Statused Feature\n")
 }
 
 func TestGenerateMarkdown_WithTags(t *testing.T) {

@@ -215,10 +215,12 @@ Output filenames are derived from the `feature` field
 (`"GPU job submission"` → `gpu_job_submission.feature` / `.md`).
 
 Plans render their `type`, `risk`, and `status` as Gherkin tag
-annotations, followed by any custom `tags` (for example,
+annotations, followed by any custom `tags`, on a feature-level tag line
+above the `Feature:` header (for example,
 `@functional @edge @planned @multi-node`) in `.feature` output, and as
 `**Type:**`/`**Status:**`/`**Risk:**`/`**Tags:**` bullets in Markdown
-output. Adding or changing these fields alters the rendered `.feature` content,
+output. Feature-level tags are inherited by every scenario in the file.
+Adding or changing these fields alters the rendered `.feature` content,
 so regenerate and re-commit any feature files checked into your
 repository (see `diff`).
 

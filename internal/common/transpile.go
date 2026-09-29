@@ -25,6 +25,11 @@ func SafeFeatureName(plan TestPlan, fallback string) string {
 func GenerateGherkin(plan TestPlan) string {
 	var builder strings.Builder
 
+	gherkinTags := make([]string, 0, 3+len(plan.Tags))
+	gherkinTags = append(gherkinTags, plan.Type, plan.Risk, plan.Status)
+	gherkinTags = append(gherkinTags, plan.Tags...)
+	fmt.Fprintf(&builder, "@%s\n", strings.Join(gherkinTags, " @"))
+
 	fmt.Fprintf(&builder, "Feature: %s\n", plan.Feature)
 	if plan.Description != nil {
 		fmt.Fprintf(&builder, "  %s\n", *plan.Description)
@@ -36,12 +41,7 @@ func GenerateGherkin(plan TestPlan) string {
 		}
 	}
 
-	// Classification tags (type, risk, status) come first and custom
-	// tags last so plans without custom tags render without them.
-	gherkinTags := make([]string, 0, 3+len(plan.Tags))
-	gherkinTags = append(gherkinTags, plan.Type, plan.Risk, plan.Status)
-	gherkinTags = append(gherkinTags, plan.Tags...)
-	fmt.Fprintf(&builder, "\n  @%s\n", strings.Join(gherkinTags, " @"))
+	builder.WriteString("\n")
 
 	hasExamples := len(plan.Examples) > 0
 	for _, scenario := range plan.Scenarios {
