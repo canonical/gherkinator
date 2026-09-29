@@ -263,7 +263,7 @@ scenarios:
 	require.NoError(t, err)
 	require.Len(t, files, 1)
 	assert.Equal(t, "tagged.feature", files[0].Filename)
-	assert.Contains(t, files[0].Content, "@functional @edge @multi-node")
+	assert.Contains(t, files[0].Content, "@functional @edge @planned @multi-node")
 }
 
 func TestRenderPlans_FileNotFound(t *testing.T) {

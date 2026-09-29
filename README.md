@@ -214,11 +214,13 @@ gherkinator generate --format gh -o out
 Output filenames are derived from the `feature` field
 (`"GPU job submission"` → `gpu_job_submission.feature` / `.md`).
 
-Plans that declare `tags` render them as Gherkin tag annotations
-(e.g. `@functional @edge @multi-node`) in `.feature` output and as a
-`**Tags:**` bullet in Markdown output. Adding tags to a plan changes
-its rendered `.feature` content, so regenerate and re-commit any
-feature files checked into your repository (see `diff`).
+Plans render their `type`, `risk`, and `status` as Gherkin tag
+annotations, followed by any custom `tags` (for example,
+`@functional @edge @planned @multi-node`) in `.feature` output, and as
+`**Type:**`/`**Status:**`/`**Risk:**`/`**Tags:**` bullets in Markdown
+output. Adding or changing these fields alters the rendered `.feature` content,
+so regenerate and re-commit any feature files checked into your
+repository (see `diff`).
 
 ---
 

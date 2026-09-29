@@ -36,10 +36,10 @@ func GenerateGherkin(plan TestPlan) string {
 		}
 	}
 
-	// Custom tags are appended after the type and risk tags so plans
-	// without tags render byte-identically to untagged plans.
-	gherkinTags := make([]string, 0, 2+len(plan.Tags))
-	gherkinTags = append(gherkinTags, plan.Type, plan.Risk)
+	// Classification tags (type, risk, status) come first and custom
+	// tags last so plans without custom tags render without them.
+	gherkinTags := make([]string, 0, 3+len(plan.Tags))
+	gherkinTags = append(gherkinTags, plan.Type, plan.Risk, plan.Status)
 	gherkinTags = append(gherkinTags, plan.Tags...)
 	fmt.Fprintf(&builder, "\n  @%s\n", strings.Join(gherkinTags, " @"))
 
