@@ -1,6 +1,6 @@
 # gherkinator
 
-A CLI tool for managing centralised YAML test plans. It validates, transpiles,
+A CLI tool for managing centralized YAML test plans. It validates, transpiles,
 and serves test plans as Gherkin feature files or Sphinx-powered Markdown
 documentation.
 
@@ -78,7 +78,7 @@ background: |-                  # Steps that run before every scenario.
   Given the cluster is available
   And I am logged in as a user
 
-examples:                       # Parametrised data rows.  Use <param> tokens
+examples:                       # Parametrized data rows.  Use <param> tokens
   - - alice                     # in scenario steps; the first row supplies
     - admin                     # column headers derived from those tokens.
   - - bob
@@ -89,7 +89,7 @@ tags:                           # Optional classification tags. Each tag
   - multi-node                  # whitespace or commas.
 ```
 
-### Parametrised scenarios
+### Parametrized scenarios
 
 When `examples` is present and scenarios reference `<param>` placeholders:
 
@@ -128,7 +128,7 @@ scenarios:
 
 ### `init`
 
-Initialise a new test plan directory with an empty YAML file.
+Initialize a new test plan directory with an empty YAML file.
 
 ```
 gherkinator init [directory-name] [flags]

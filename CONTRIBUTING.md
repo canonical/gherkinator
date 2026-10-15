@@ -157,7 +157,7 @@ Common commit types used in this project:
 | `test` | adding or updating tests |
 | `docs` | changes to `README.md`, `CONTRIBUTING.md`, or inline comments |
 | `chore` | dependency updates, `justfile` changes, CI config |
-| `refactor` | code restructuring with no behaviour change |
+| `refactor` | code restructuring with no behavior change |
 
 ### Useful resources
 
