@@ -80,6 +80,10 @@ just vet              # Vet all Go source code.
 5. Lint: `just lint` (uses `golangci-lint`). Fix all linter errors.
 6. Vet: `just vet` (uses `go vet`). Fix all vetting errors.
 7. Repeat for each new or modified file.
+8. If the change affects gherkinator's public API — commands, flags, the
+   YAML test plan schema, exit codes, rendered output, or configuration —
+   update the `gherkinator-cli` skill under `.agents/skills/gherkinator-cli/`
+   (`SKILL.md`, `reference.md`, and `examples.md`) in the same change.
 
 Pipe to the output of shell commands to either `head` or `tail` to capture the
 `stdout` and/or `stderr`.
