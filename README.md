@@ -40,7 +40,7 @@ sudo snap install gherkinator --classic
 ```bash
 git clone https://github.com/canonical/gherkinator.git
 cd gherkinator
-go build -o gherkinator .
+just build
 ```
 
 ## YAML schema
@@ -517,4 +517,3 @@ tools:
 | `GHERKINATOR_TOOLS_PYTHON3` | `python3` |
 | `GHERKINATOR_TOOLS_PIP` | `pip` |
 | `GHERKINATOR_TOOLS_MAKE` | `make` |
-
