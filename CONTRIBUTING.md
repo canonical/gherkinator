@@ -131,7 +131,12 @@ The recommended development loop for each new file is:
 
 ### Snap package
 
-The Snap configuration lives in `snap/snapcraft.yaml`. When updating it:
+The Snap configuration lives in `build/snap/snapcraft.yaml` (copied to
+`./snap` by `just snap build`). The snap is strictly confined, so the
+`gherkinator` part stages the external tools that `serve` shells out to
+(`git`, `make`, `python3` with `python3-venv`, `libcairo2` for CairoSVG)
+plus `micro` as the fallback editor — strict confinement cannot execute
+host binaries.
 
 1. Keep it in sync with the implementation plan's Phase 12 description.
 2. Build with `just snap` (or `snapcraft`) to verify it compiles correctly.
@@ -239,4 +244,3 @@ accepted:
    with a clear title and description against the `main` branch. The pull
    request should be focused — do not include commits unrelated to your
    contribution.
-
