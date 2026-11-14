@@ -125,15 +125,21 @@ plan).
 | `--status` | | _(unset)_ | Status filter (same semantics as generate) |
 | `--tag` | | _(unset)_ | Union tag filter (same semantics as generate) |
 
-Pipeline: derives project name → clones the Canonical Sphinx stack
-(github.com/canonical/sphinx-stack) into `.gherkindocs/` → prunes template
-content dirs and default `index.rst` → generates Markdown into type-based
-subdirectories under `.gherkindocs/docs/` → builds a root `index.md` and
-patches `conf.py` → runs `make run` inside a Bubbletea TUI streaming
-build/server logs. Input YAML files are watched; docs rebuild on save.
-Stop with Ctrl+C.
+Pipeline: derives project name → resolves the staging directory
+(`serve.dir`/`GHERKINATOR_SERVE_DIR`, then `$SNAP_USER_COMMON/gherkindocs`
+inside the snap, then `./.gherkindocs`) → clones the Canonical Sphinx stack
+(github.com/canonical/sphinx-stack) into it → prunes template content dirs
+and default `index.rst` → generates Markdown into type-based subdirectories
+under `<staging>/docs/` → builds a root `index.md` and patches `conf.py` →
+runs `make run` inside a Bubbletea TUI streaming build/server logs; the
+serving URL (`http://127.0.0.1:8000` by default, honoring `SPHINX_HOST`/
+`SPHINX_PORT`) is printed before the TUI starts and shown in its header.
+Input YAML files are watched; docs rebuild on save. Stop with Ctrl+C. The
+staging directory is wiped at the start of every `serve` run, which refuses
+to start while another instance is serving from it and terminates orphaned
+servers left behind by killed sessions.
 
-Prerequisites: `git`, `python3`, `pip`, `make`.
+Prerequisites: `git`, `python3`, `pip`, `make` (bundled inside the snap).
 
 ### `delete [feature-names...]`
 
@@ -152,8 +158,10 @@ modifying the file.
 | --- | --- | --- | --- |
 | `--dir` | `-d` | `.` | Directory to clean |
 
-Removes generated `.feature` and `.md` files plus the `.gherkindocs/`
-staging directory.
+Removes generated `.feature` and `.md` files plus the serve staging
+directory (see `serve.dir` / `GHERKINATOR_SERVE_DIR` above). Failures to
+remove the staging directory produce a warning on stderr; the generated
+files are still removed.
 
 ### `diff [flags] <plans> <features>`
 
@@ -204,13 +212,21 @@ Shared by `validate`, `generate`, `serve`, and the `<plans>` argument of
 
 ## Configuration
 
-Tool paths used by `serve` can be overridden via a `.gherkinator.yaml`
-file (searched in `.` then `$HOME`) or environment variables prefixed with
-`GHERKINATOR_`.
+Tool paths and the serve staging directory can be overridden via a
+`.gherkinator.yaml` file (searched in `.` then `$HOME`) or environment
+variables prefixed with `GHERKINATOR_`.
+
+A non-hidden `gherkinator.yaml` file is also accepted (searched in `.` then
+`$HOME`) for environments where hidden files are inaccessible, such as the
+strictly confined snap. The hidden `.gherkinator.yaml` always takes
+precedence when both exist.
 
 `.gherkinator.yaml`:
 
 ```yaml
+serve:
+  dir: /path/to/staging  # staging dir for `serve`/`clean`; default ./.gherkindocs
+
 tools:
   git: /usr/bin/git
   python3: /usr/bin/python3
@@ -222,7 +238,13 @@ Environment variables:
 
 | Variable | Default |
 | --- | --- |
+| `GHERKINATOR_SERVE_DIR` | `.gherkindocs` (`$SNAP_USER_COMMON/gherkindocs` in the snap) |
 | `GHERKINATOR_TOOLS_GIT` | `git` |
 | `GHERKINATOR_TOOLS_PYTHON3` | `python3` |
 | `GHERKINATOR_TOOLS_PIP` | `pip` |
 | `GHERKINATOR_TOOLS_MAKE` | `make` |
+
+`serve.dir` / `GHERKINATOR_SERVE_DIR` accepts any path (relative values
+resolve against the current working directory). Point it at a dedicated
+directory: `serve` wipes it on startup and `clean` deletes its contents
+recursively.
