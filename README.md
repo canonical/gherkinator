@@ -104,6 +104,7 @@ A single `test-plan.yaml` can contain multiple plans separated by `---`:
 
 ```yaml
 feature: "Login Feature"
+risk: edge
 type: functional
 status: planned
 scenarios:
@@ -114,6 +115,7 @@ scenarios:
     Then the user sees the dashboard
 ---
 feature: "Stress Test"
+risk: stable
 type: performance
 status: implemented
 scenarios:
