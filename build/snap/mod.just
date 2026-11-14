@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+root := justfile_directory()
+
 [private]
 default:
     @just snap help
@@ -20,9 +22,9 @@ default:
 # Build snap package
 build:
     @echo "Building snap package..."
-    cp -r build/snap ./snap
-    snapcraft pack
-    rm -rf snap/
+    cp -r "{{ root }}/build/snap" "{{ root }}/snap"
+    cd "{{ root }}" && snapcraft pack
+    rm -rf "{{ root }}/snap"
 
 # Show available recipes in the snap module
 help:
