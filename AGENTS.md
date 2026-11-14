@@ -47,8 +47,12 @@ just clean       # Remove build artifacts, .gherkindocs, and snap outputs.
 
 ### Building the snap package
 
-`gherkinator` is distributed as a **classic** confined Snap on `core24` using
-the `go` build plugin (`snap/snapcraft.yaml`).
+`gherkinator` is distributed as a **strict** confined Snap on `core26` using
+the `go` build plugin (`snap/snapcraft.yaml`). The `gherkinator` part
+stages the external tools that `serve` shells out to (`git`, `make`,
+`python3` with `python3-venv`, `libcairo2` for CairoSVG) plus `micro` as
+the fallback editor, because strict confinement cannot execute host
+binaries.
 
 ```bash
 just snap        # Build the snap with `snapcraft`.
