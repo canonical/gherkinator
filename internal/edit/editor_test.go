@@ -1,7 +1,9 @@
 package edit
 
 import (
+	"io"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/canonical/gherkinator/internal/common"
@@ -47,6 +49,163 @@ func TestTextEditor_NoEditorAvailable(t *testing.T) {
 	if err := os.Setenv("PATH", path); err != nil {
 		t.Fatalf("failed to restore PATH: %v", err)
 	}
+}
+
+// captureStderr collects everything written to os.Stderr while fn runs. The
+// swap is safe here because the tests are single-goroutine.
+func captureStderr(t *testing.T, fn func()) string {
+	t.Helper()
+
+	oldStderr := os.Stderr
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	os.Stderr = w
+
+	fn()
+
+	require.NoError(t, w.Close())
+	os.Stderr = oldStderr
+	output, err := io.ReadAll(r)
+	require.NoError(t, err)
+	return string(output)
+}
+
+func TestResolveEditor_PrefersVISUALOverEDITOR(t *testing.T) {
+	t.Setenv("VISUAL", "cat")
+	t.Setenv("EDITOR", "true")
+
+	editor, err := resolveEditor()
+	require.NoError(t, err)
+	assert.Equal(t, "cat", editor)
+}
+
+func TestResolveEditor_InaccessibleVISUALFallsBackToEDITOR(t *testing.T) {
+	t.Setenv("VISUAL", "/nonexistent/vim")
+	t.Setenv("EDITOR", "cat")
+
+	var editor string
+	stderr := captureStderr(t, func() {
+		var err error
+		editor, err = resolveEditor()
+		require.NoError(t, err)
+	})
+
+	// The inaccessible $VISUAL is skipped with a warning and $EDITOR wins.
+	assert.Equal(t, "cat", editor)
+	assert.Contains(t, stderr, "warning: editor \"/nonexistent/vim\" from $VISUAL is not accessible")
+}
+
+func TestResolveEditor_WhitespaceOnlyEditorIgnored(t *testing.T) {
+	t.Setenv("VISUAL", "   ")
+	t.Setenv("EDITOR", "cat")
+
+	// A whitespace-only value must not panic on strings.Fields and should
+	// be treated as unset.
+	editor, err := resolveEditor()
+	require.NoError(t, err)
+	assert.Equal(t, "cat", editor)
+}
+
+func TestResolveEditor_FallsBackToDefaultEditorList(t *testing.T) {
+	// Provide a fake nano so the fallback list resolves inside the test,
+	// mirroring the bundled editor inside the strictly confined snap.
+	binDir := t.TempDir()
+	nanoPath := filepath.Join(binDir, "nano")
+	require.NoError(t, os.WriteFile(nanoPath, []byte("#!/bin/sh\nexit 0\n"), 0o755))
+	t.Setenv("PATH", binDir)
+
+	t.Setenv("VISUAL", "/nonexistent/vim")
+	t.Setenv("EDITOR", "/nonexistent/nano")
+
+	var editor string
+	stderr := captureStderr(t, func() {
+		var err error
+		editor, err = resolveEditor()
+		require.NoError(t, err)
+	})
+
+	assert.Equal(t, "nano", editor)
+	assert.Contains(t, stderr, "$VISUAL is not accessible")
+	assert.Contains(t, stderr, "$EDITOR is not accessible")
+}
+
+func TestResolveEditor_NoEditorAvailable(t *testing.T) {
+	t.Setenv("VISUAL", "")
+	t.Setenv("EDITOR", "")
+
+	path := os.Getenv("PATH")
+	require.NoError(t, os.Setenv("PATH", "/nonexistent"))
+	t.Cleanup(func() {
+		require.NoError(t, os.Setenv("PATH", path))
+	})
+
+	_, err := resolveEditor()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no text editor found")
+}
+
+func TestTextEditor_InaccessibleVISUALFallsBack(t *testing.T) {
+	// The fake nano echoes the file it is handed, exercising the full
+	// fallback path from an inaccessible $VISUAL through to a valid editor.
+	// /bin/cat is absolute because PATH is restricted to binDir.
+	binDir := t.TempDir()
+	nanoPath := filepath.Join(binDir, "nano")
+	require.NoError(t, os.WriteFile(nanoPath, []byte("#!/bin/sh\n/bin/cat \"$1\"\n"), 0o755))
+	t.Setenv("PATH", binDir)
+	t.Setenv("VISUAL", "/nonexistent/vim")
+	t.Setenv("EDITOR", "")
+
+	content := []byte("test content")
+	var edited []byte
+	stderr := captureStderr(t, func() {
+		var err error
+		edited, err = TextEditor(content)
+		require.NoError(t, err)
+	})
+
+	assert.Equal(t, content, edited)
+	assert.Contains(t, stderr, "falling back to the default editor")
+}
+
+func TestTextEditor_EditorExitsWithError(t *testing.T) {
+	binDir := t.TempDir()
+	editorPath := filepath.Join(binDir, "failing-editor")
+	require.NoError(t, os.WriteFile(editorPath, []byte("#!/bin/sh\nexit 1\n"), 0o755))
+	t.Setenv("PATH", binDir)
+	t.Setenv("VISUAL", "")
+	t.Setenv("EDITOR", "failing-editor")
+
+	// An editor that launches but exits non-zero is a user abort, not a
+	// resolution problem; it must not fall back to another editor.
+	_, err := TextEditor([]byte("test content"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "editor exited with error")
+}
+
+func TestTextEditor_CreateTempFails(t *testing.T) {
+	t.Setenv("VISUAL", "")
+	t.Setenv("EDITOR", "cat")
+	t.Setenv("TMPDIR", "/nonexistent-tmpdir-for-gherkinator-tests")
+
+	// With a broken TMPDIR the scratch file cannot be created and the
+	// failure must surface instead of silently losing the edit.
+	_, err := TextEditor([]byte("test content"))
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), "editor exited with error")
+}
+
+func TestTextEditor_EditorDeletesTempFile(t *testing.T) {
+	binDir := t.TempDir()
+	editorPath := filepath.Join(binDir, "deleting-editor")
+	require.NoError(t, os.WriteFile(editorPath, []byte("#!/bin/sh\n/bin/rm \"$1\"\n"), 0o755))
+	t.Setenv("PATH", binDir)
+	t.Setenv("VISUAL", "")
+	t.Setenv("EDITOR", "deleting-editor")
+
+	// If the scratch file disappears, reading back the edit must fail
+	// rather than return empty content.
+	_, err := TextEditor([]byte("test content"))
+	require.Error(t, err)
 }
 
 func TestEditHelpTemplate_ContainsSchemaFields(t *testing.T) {
