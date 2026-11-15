@@ -1,7 +1,6 @@
 package serve
 
 import (
-	"bufio"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -13,18 +12,18 @@ import (
 const maxServeLogLines = 100
 
 // serveModel is the Bubbletea model for the gherkinator serve command.
-// It starts make run as a child process, streams its combined output
-// into a log view, and shuts down cleanly on Ctrl+C.
+// It streams the output of the already-running `make run` child process
+// into a log view and shuts down cleanly on Ctrl+C. The child process is
+// owned by the serve command (see Run), which handles signal-driven
+// cleanup; the model only mirrors its state.
 type serveModel struct {
-	makeBin  string
-	docsDir  string
-	env      []string
-	lines    []string
-	cmd      *exec.Cmd
-	outputCh <-chan string
-	doneCh   <-chan error
-	quitting bool
-	err      error
+	cmd        *exec.Cmd
+	servingURL string
+	lines      []string
+	outputCh   <-chan string
+	doneCh     <-chan error
+	quitting   bool
+	err        error
 }
 
 // serveLine is a Bubbletea message carrying a single line of output.
@@ -34,25 +33,22 @@ type serveLine string
 type serveExited struct{ err error }
 
 // InitialServeModel returns a Bubbletea model ready to be passed to
-// tea.NewProgram. The model is inert until Init() is called by the
-// Bubbletea runtime.
-func InitialServeModel(makeBin string, docsDir string, env []string) serveModel {
+// tea.NewProgram. cmd must already be started, with outputCh and doneCh
+// wired to its streams. servingURL is displayed in the header because
+// sphinx-autobuild suppresses the uvicorn banner that normally announces
+// the web address.
+func InitialServeModel(cmd *exec.Cmd, outputCh <-chan string, doneCh <-chan error, servingURL string) serveModel {
 	return serveModel{
-		makeBin: makeBin,
-		docsDir: docsDir,
-		env:     env,
+		cmd:        cmd,
+		outputCh:   outputCh,
+		doneCh:     doneCh,
+		servingURL: servingURL,
 	}
 }
 
 func (m serveModel) Init() tea.Cmd {
-	return func() tea.Msg {
-		return serveStartMsg{}
-	}
+	return waitForOutput(m.outputCh, m.doneCh)
 }
-
-// serveStartMsg triggers the process launch from inside the Update loop
-// so we can store the cmd and channels on the model.
-type serveStartMsg struct{}
 
 // waitForOutput returns a Cmd that reads one item from either the output
 // channel or the done channel and returns the appropriate message.
@@ -74,43 +70,6 @@ func waitForOutput(outputCh <-chan string, doneCh <-chan error) tea.Cmd {
 
 func (m serveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case serveStartMsg:
-		cmd := exec.Command(m.makeBin, "run")
-		cmd.Dir = m.docsDir
-		cmd.Env = m.env
-
-		stdout, err := cmd.StdoutPipe()
-		if err != nil {
-			m.quitting = true
-			m.err = err
-			return m, tea.Quit
-		}
-		cmd.Stderr = cmd.Stdout // merge stderr into stdout
-
-		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-
-		if err := cmd.Start(); err != nil {
-			m.quitting = true
-			m.err = err
-			return m, tea.Quit
-		}
-
-		outputCh := make(chan string, 64)
-		doneCh := make(chan error, 1)
-		go func() {
-			scanner := bufio.NewScanner(stdout)
-			for scanner.Scan() {
-				outputCh <- scanner.Text()
-			}
-			close(outputCh)
-			doneCh <- cmd.Wait()
-		}()
-
-		m.cmd = cmd
-		m.outputCh = outputCh
-		m.doneCh = doneCh
-		return m, waitForOutput(outputCh, doneCh)
-
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyCtrlC {
 			m.quitting = true
@@ -138,6 +97,9 @@ func (m serveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m serveModel) View() string {
 	var sb strings.Builder
 	sb.WriteString("gherkinator serve \u2014 press Ctrl+C to stop\n")
+	if m.servingURL != "" {
+		fmt.Fprintf(&sb, "Documentation: %s\n", m.servingURL)
+	}
 	sb.WriteString(strings.Repeat("\u2500", 50) + "\n")
 
 	for _, line := range m.lines {

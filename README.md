@@ -27,13 +27,38 @@ Multiple test plans can live in one YAML file, separated by `---`.
 | `python3`, `pip` | `serve` (Sphinx build environment) |
 | `make` | `serve` (runs `make run` inside the docs directory) |
 
+The `serve` prerequisites are bundled inside the Snap package; they are only
+needed when building from source.
+
 ## Installation
 
 ### Snap (recommended)
 
 ```bash
-sudo snap install gherkinator --classic
+sudo snap install gherkinator
 ```
+
+#### Strict confinement notes
+
+The snap is strictly confined. Compared to a source install, the following
+differences apply:
+
+- Projects must live under your home directory (non-hidden paths), or on a
+  mounted drive after `snap connect gherkinator:removable-media`.
+- Hidden files are not accessible. A `.gherkinator.yaml` config file is
+  ignored; use a non-hidden `gherkinator.yaml` instead (the dotfile takes
+  precedence outside the snap).
+- `serve` stages its build in `$SNAP_USER_COMMON/gherkindocs` instead of
+  `./.gherkindocs`, and serves one documentation set at a time (port 8000).
+  A second `serve` invocation refuses to start while another is running;
+  servers orphaned by a killed session are cleaned up on the next run.
+- `clean` removes generated files from the target directory *and* the shared
+  staging directory under `$SNAP_USER_COMMON`.
+- `edit` cannot launch host editors; it uses the bundled `micro` editor
+  (`EDITOR` is preset to `micro` inside the snap — set `VISUAL` to override).
+- `GHERKINATOR_SERVE_DIR` (or the `serve.dir` config key) redirects the
+  staging directory. Point it at a dedicated directory: `clean` deletes its
+  contents recursively.
 
 ### Build from source
 
@@ -104,6 +129,7 @@ A single `test-plan.yaml` can contain multiple plans separated by `---`:
 
 ```yaml
 feature: "Login Feature"
+risk: edge
 type: functional
 status: planned
 scenarios:
@@ -114,6 +140,7 @@ scenarios:
     Then the user sees the dashboard
 ---
 feature: "Stress Test"
+risk: stable
 type: performance
 status: implemented
 scenarios:
@@ -499,9 +526,17 @@ Tool paths used by the `serve` command can be overridden via a
 `.gherkinator.yaml` file (searched in `.` then `$HOME`) or environment
 variables prefixed with `GHERKINATOR_`.
 
+A non-hidden `gherkinator.yaml` file is also accepted (searched in `.` then
+`$HOME`) for environments where hidden files are inaccessible, such as the
+strictly confined snap. The hidden `.gherkinator.yaml` always takes
+precedence when both exist.
+
 **`.gherkinator.yaml`:**
 
 ```yaml
+serve:
+  dir: /path/to/staging  # staging directory for `serve`; default ./.gherkindocs
+
 tools:
   git: /usr/bin/git
   python3: /usr/bin/python3
@@ -513,6 +548,7 @@ tools:
 
 | Variable | Default |
 | --- | --- |
+| `GHERKINATOR_SERVE_DIR` | `.gherkindocs` (`$SNAP_USER_COMMON/gherkindocs` in the snap) |
 | `GHERKINATOR_TOOLS_GIT` | `git` |
 | `GHERKINATOR_TOOLS_PYTHON3` | `python3` |
 | `GHERKINATOR_TOOLS_PIP` | `pip` |

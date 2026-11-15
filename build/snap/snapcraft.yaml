@@ -1,5 +1,5 @@
 name: gherkinator
-version: 0.1.1
+version: 0.2.0
 title: Gherkinator
 summary: A testing plan management and generation tool
 description: |
@@ -11,14 +11,32 @@ source-code: "https://github.com/canonical/gherkinator"
 issues: "https://github.com/canonical/gherkinator/issues"
 contact: "hpc-ubuntu-group@canonical.com"
 
-base: core24
-confinement: classic
+base: core26
+confinement: strict
 compression: lzo
 grade: stable
+
+layout:
+  /usr/share/python-wheels:
+    bind: $SNAP/usr/share/python-wheels
 
 apps:
   gherkinator:
     command: bin/gherkinator
+    plugs:
+      - home
+      - network
+      - network-bind
+      - removable-media
+    environment:
+      GIT_EXEC_PATH: $SNAP/usr/lib/git-core
+      GIT_TEMPLATE_DIR: $SNAP/usr/share/git-core/templates
+      GIT_CONFIG_NOSYSTEM: "1"
+      GIT_CONFIG_GLOBAL: /dev/null
+      GIT_CONFIG_SYSTEM: /dev/null
+      EDITOR: micro
+      MICRO_CONFIG_HOME: $SNAP_USER_COMMON/config/micro
+      PIP_CACHE_DIR: $SNAP_USER_COMMON/cache/pip
 
 parts:
   gherkinator:
@@ -29,3 +47,12 @@ parts:
     override-build: |
       VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo dev)
       go build -ldflags "-X github.com/canonical/gherkinator/internal/version.Version=${VERSION}" -o $CRAFT_PART_INSTALL/bin/gherkinator ./cmd/gherkinator/
+    stage-packages:
+      - git
+      - libcairo2
+      - make
+      - micro
+      - python3
+      - python3-venv
+    prime:
+      - -usr/share/man

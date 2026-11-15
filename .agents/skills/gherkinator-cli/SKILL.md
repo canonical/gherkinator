@@ -41,7 +41,7 @@ live Sphinx docs site.
 | `edit <file>` | Open the plan in `$VISUAL`/`$EDITOR` with schema help; validates on save |
 | `validate [inputs]` | Check plans against the schema |
 | `generate [inputs]` | Emit `.feature` (`--format gh`) or `.md` (`--format md`) files |
-| `serve [inputs]` | Live Sphinx docs site; rebuilds on YAML save |
+| `serve [inputs]` | Live Sphinx docs site; rebuilds on YAML save; prints the serving URL; one instance at a time |
 | `delete [names...]` | Remove plans by feature name (requires `-i <file>`) |
 | `clean` | Remove generated `.feature`/`.md` files and `.gherkindocs/` (`-d` selects the directory) |
 | `diff <plans> <features>` | CI drift check; exit 0 = in sync, 1 = diffs, 2 = error |
@@ -84,6 +84,8 @@ arguments, the current working directory is scanned.
 - **`serve` prerequisites**: `git`, `python3`, `pip`, `make`. It clones the
   Canonical Sphinx stack into `.gherkindocs/` and runs `make run` in a TUI;
   stop with Ctrl+C.
+- **Snap confinement**: the snap is strictly confined; see the README
+  "Strict confinement notes" for the differences vs. a source install.
 - **`delete` requires `-i <file>`** and matches feature names
   case-insensitively; use `-y` to skip confirmation.
 - **Never install the snap on the host or publish it** when working in the

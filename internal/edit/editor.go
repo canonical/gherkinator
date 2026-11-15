@@ -46,23 +46,40 @@ func EditHelpTemplate() string {
 `
 }
 
+// defaultEditors is the ordered fallback list searched when $VISUAL and
+// $EDITOR are unset or unusable. It finds the environment's default editor,
+// which inside the strictly confined snap is the bundled nano.
+var defaultEditors = []string{"editor", "vi", "emacs", "nano"}
+
+// resolveEditor returns the editor command line to launch. $VISUAL wins over
+// $EDITOR; a configured editor that cannot be resolved produces a warning on
+// stderr and the next candidate is tried.
+func resolveEditor() (string, error) {
+	for _, env := range []string{"VISUAL", "EDITOR"} {
+		editor := strings.TrimSpace(os.Getenv(env))
+		if editor == "" {
+			continue
+		}
+		parts := strings.Fields(editor)
+		if _, err := exec.LookPath(parts[0]); err == nil {
+			return editor, nil
+		}
+		fmt.Fprintf(os.Stderr, "warning: editor %q from $%s is not accessible in this environment; falling back to the default editor\n", editor, env) //nolint:errcheck // Writing to stderr; error is not actionable
+	}
+
+	for _, candidate := range defaultEditors {
+		if _, err := exec.LookPath(candidate); err == nil {
+			return candidate, nil
+		}
+	}
+	return "", errors.New("no text editor found, please set the EDITOR environment variable")
+}
+
 // TextEditor opens a text editor with a temporary YAML file for editing.
 func TextEditor(content []byte) ([]byte, error) {
-	editor := os.Getenv("VISUAL")
-	if editor == "" {
-		editor = os.Getenv("EDITOR")
-		if editor == "" {
-			for _, p := range []string{"editor", "vi", "emacs", "nano"} {
-				_, err := exec.LookPath(p)
-				if err == nil {
-					editor = p
-					break
-				}
-			}
-			if editor == "" {
-				return nil, errors.New("no text editor found, please set the EDITOR environment variable")
-			}
-		}
+	editor, err := resolveEditor()
+	if err != nil {
+		return nil, err
 	}
 
 	f, err := os.CreateTemp("", "gherkinator_edit_*.yaml")

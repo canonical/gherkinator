@@ -1,5 +1,5 @@
 // Package clean implements the `gherkinator clean` subcommand: it removes
-// generated documentation files and the .gherkindocs/ staging directory.
+// generated documentation files and the serve staging directory.
 package clean
 
 import (
@@ -7,15 +7,22 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/canonical/gherkinator/internal/common"
 )
 
-// CleanDirectory removes generated files (.feature, .md) and the
-// .gherkindocs hidden directory from the specified directory.
+// CleanDirectory removes generated files (.feature, .md) and the serve
+// staging directory (see common.StagingDirFor) from the specified directory.
 func CleanDirectory(dir string) error {
-	// Remove the hidden docs serve directory
-	serveDir := filepath.Join(dir, ".gherkindocs")
+	serveDir, err := common.StagingDirFor(dir)
+	if err != nil {
+		return fmt.Errorf("failed to resolve serve directory: %w", err)
+	}
+
+	// Failures to remove the staging directory are warnings: removing the
+	// generated files below is the primary purpose of this command.
 	if err := os.RemoveAll(serveDir); err != nil {
-		return fmt.Errorf("failed to remove %s: %w", serveDir, err)
+		fmt.Fprintf(os.Stderr, "warning: could not fully remove serve directory %s: %v\n", serveDir, err) //nolint:errcheck // Writing to stderr; error is not actionable
 	}
 
 	// Remove generated .feature and .md files
